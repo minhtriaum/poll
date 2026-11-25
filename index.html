@@ -198,7 +198,7 @@ const VERSION = 'v1.3';
 const _AE = '';
 const _dec = e => { try { return decodeURIComponent(escape(atob(e.split('').reverse().join('')))); } catch (x) { return ''; } };
 const _enc = u => btoa(unescape(encodeURIComponent(u))).split('').reverse().join('');
-const maskApi = u => u ? u.replace(/(\/s\/)(.{4}).*(.{4})(\/exec)/, '$1$2••••••••$3$4') : '';
+const maskApi = u => u ? u.replace(/(\/s\/)(.{4}).*(.{4})(\/exec)/, '$1$2••••••••$3$4') : 'jVGel9ydldzVBRkStdGbBVzakh2dVRmQlpXd4FlelVWOVhkYtd1dzoUMIZza5Qnd4UlVqp1M1dWLQh1cZRXVnpkQ3cUN4J2Y5Z2SB9ycvM3byNWYt9SbvNmLlx2Zv92ZuQHcpJ3Yz9yL6MHc0RHa';
 const DEFAULT_API_URL = _dec(_AE);
 
 let liveOpen = false, liveData = null, orderPick = false, orderSel = new Set(), order = null, orderVoters = [], saveTimer = null;
