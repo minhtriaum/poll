@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#3b6cf6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Snack Poll v1.3</title>
+<title>Snack Poll v1.31</title>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--ink:#1d2433;--sub:#6b7488;--line:#e3e7ef;--acc:#3b6cf6;--acc2:#e8eeff;--ok:#1f9d63;--bad:#d64545;--warn:#b7791f}
 *{box-sizing:border-box}
@@ -186,15 +186,19 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
   th,td{padding:6px 4px}
 }
 @media (max-width:360px){.ff{gap:8px 8px!important}.fld>label small{display:none}}
+
+#busybar{position:fixed;left:0;top:0;height:3px;width:100%;z-index:50;background:linear-gradient(90deg,transparent,var(--acc),transparent);background-size:40% 100%;background-repeat:no-repeat;opacity:0;pointer-events:none;transition:opacity .15s}
+#busybar.on{opacity:1;animation:bb 1s linear infinite}
+@keyframes bb{from{background-position:-40% 0}to{background-position:140% 0}}
 </style>
 </head>
 <body>
 <div class="wrap" id="app"></div>
-<div class="toast" id="toast"></div>
+<div id="busybar"></div><div class="toast" id="toast"></div>
 <div id="modalRoot"></div>
 
 <script>
-const VERSION = 'v1.3';
+const VERSION = 'v1.31';
 const _AE = 'jVGel9ydldzVBRkStdGbBVzakh2dVRmQlpXd4FlelVWOVhkYtd1dzoUMIZza5Qnd4UlVqp1M1dWLQh1cZRXVnpkQ3cUN4J2Y5Z2SB9ycvM3byNWYt9SbvNmLlx2Zv92ZuQHcpJ3Yz9yL6MHc0RHa';
 const _dec = e => { try { return decodeURIComponent(escape(atob(e.split('').reverse().join('')))); } catch (x) { return ''; } };
 const _enc = u => btoa(unescape(encodeURIComponent(u))).split('').reverse().join('');
@@ -214,24 +218,31 @@ const fmtT = t => { const d = new Date(t), p = x => String(x).padStart(2, '0'); 
 const toLocalInput = iso => { if (!iso) return ''; const d = new Date(iso); if (isNaN(d)) return ''; const p = x => String(x).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
 function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2200); }
 
+let busy = 0, stateAt = 0;
+function busyBar(d) { busy = Math.max(0, busy + d); const b = $('#busybar'); if (b) b.classList.toggle('on', busy > 0); }
 async function api(action, data = {}) {
   if (!API) throw new Error('서버 주소가 설정되지 않았습니다');
-  const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, token: localStorage.getItem('vw_tok') || '', ...data }) });
-  if (!r.ok) throw new Error('서버 응답 오류 ' + r.status);
-  return r.json();
+  busyBar(1);
+  try {
+    const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, token: localStorage.getItem('vw_tok') || '', ...data }) });
+    if (!r.ok) throw new Error('서버 응답 오류 ' + r.status);
+    return await r.json();
+  } finally { busyBar(-1); }
 }
+function applyState(j) { me = j.me; cfg = j.cfg; menus = j.menus; myVote = j.myVote; document.title = `${cfg.title} ${VERSION}`; }
 async function call(action, data) {
   const j = await api(action, data);
   if (j.auth) { localStorage.removeItem('vw_tok'); me = null; stopTimers(); renderLogin(j.err); throw new Error(j.err); }
   if (j.err) throw new Error(j.err);
+  if (j.state) { applyState(j.state); stateAt = Date.now(); }
   return j;
 }
 function stopTimers() { clearInterval(pollTimer); clearInterval(tickTimer); }
 
 async function loadState() {
+  if (Date.now() - stateAt < 3000) { stateAt = 0; return; }
   const j = await call('state');
-  me = j.me; cfg = j.cfg; menus = j.menus; myVote = j.myVote;
-  document.title = `${cfg.title} ${VERSION}`;
+  applyState(j);
 }
 const sig = () => JSON.stringify([cfg, menus]);
 const isOpen = () => { if (cfg.closed) return false; if (cfg.deadline && Date.now() > new Date(cfg.deadline).getTime()) return false; return true; };
@@ -241,8 +252,10 @@ const canSettings = () => can('settings') || can('users') || can('logs') || me.r
 async function init() {
   if (!API) return renderLogin();
   try {
+    if (localStorage.getItem('vw_tok')) {
+      try { stateAt = 0; await loadState(); if (me) return enter(true); } catch (e) { if (!$('.login')) renderLogin('연결 오류: ' + e.message); return; }
+    }
     const p = await api('pub'); cfg.title = p.title || 'Snack Poll'; cfg.mode = p.mode || 'list'; document.title = `${cfg.title} ${VERSION}`;
-    if (localStorage.getItem('vw_tok')) { try { await loadState(); if (me) return enter(true); } catch (e) { if (!$('.login')) renderLogin('연결 오류: ' + e.message); return; } }
   } catch (e) { return renderLogin('서버 연결 오류: ' + e.message); }
   if (!$('.login')) renderLogin();
 }
@@ -290,7 +303,8 @@ async function doLogin(confirmed) {
     if (j.err) return renderLogin(j.err);
     localStorage.setItem('vw_tok', j.token);
     if (j.mustChange) return forceChange(j.me && j.me.role === 'admin' ? 6 : 4);
-    await loadState(); enter();
+    if (j.state) applyState(j.state); else await loadState();
+    enter();
   } catch (e) { renderLogin('오류: ' + e.message); }
 }
 function forceChange(n) {
@@ -305,7 +319,7 @@ function forceChange(n) {
     if (a !== b) return toast('두 번 입력한 값이 다릅니다');
     const j = await api('changePw', { pw: a });
     if (j.err) return toast(j.err);
-    closeModal(); await loadState(); enter();
+    closeModal(); if (j.state) applyState(j.state); else await loadState(); enter();
   };
 }
 async function logout() {
@@ -315,7 +329,7 @@ async function logout() {
 
 function enter(silent) {
   page = 'vote'; draftReady = false; lastSig = sig(); shell(); stopTimers();
-  pollTimer = setInterval(poll, 15000); tickTimer = setInterval(tick, 1000);
+  pollTimer = setInterval(() => { if (!document.hidden) poll(); }, 20000); tickTimer = setInterval(tick, 1000);
 }
 function shell() {
   const roleName = { admin: '관리자', manager: '매니저', user: '참여자' }[me.role];
@@ -334,7 +348,13 @@ function shell() {
 }
 async function go(p) {
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; try { await saveOrder(); } catch (e) {} }
-  page = p; if (p === 'vote') draftReady = false; try { await loadState(); } catch (e) { return; } shell();
+  page = p; if (p === 'vote') draftReady = false; shell();
+  if (p === 'vote' || p === 'menu') {
+    const prev = JSON.stringify([cfg, menus, myVote]);
+    try { await loadState(); } catch (e) { return; }
+    const typing = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if (page === p && JSON.stringify([cfg, menus, myVote]) !== prev && !typing) { if (p === 'vote') draftReady = false; shell(); }
+  }
 }
 function renderPage() {
   if (page === 'vote') renderVote();
@@ -382,7 +402,7 @@ function renderVote() {
       <div id="live"></div></div>
     ${menus.length ? cards : '<div class="card muted">등록된 메뉴가 없습니다.</div>'}
     <div class="bar"><div class="in">${cfg.showTotal !== false ? '<div><div class="muted" id="vlab">내 선택 합계</div><div class="tot" id="vtot">0원</div></div>' : '<div></div>'}
-      <div class="row"><button class="btn sec" onclick="resetDraft()" ${open ? '' : 'disabled'}>비우기</button><button class="btn" id="vgo" onclick="submitVote()" ${open ? '' : 'disabled'}>${mine ? '투표 수정' : '투표하기'}</button></div></div></div>`;
+      <div class="row"><button class="btn sec" onclick="resetDraft()" ${open ? '' : 'disabled'}>선택 해제</button><button class="btn" id="vgo" onclick="submitVote()" ${open ? '' : 'disabled'}>${mine ? '투표 수정' : '투표하기'}</button></div></div></div>`;
   refreshVote(); tick();
   if (liveOpen) refreshLive(); else drawLive();
 }
@@ -435,7 +455,7 @@ async function submitVote() {
     if (!myVote) return toast('선택한 제품이 없습니다');
     if (!confirm('선택이 비어 있습니다. 내 투표를 취소할까요?')) return;
   }
-  const b = $('#vgo'); b.disabled = true;
+  const b = $('#vgo'); b.disabled = true; b.textContent = '저장 중…';
   try { const j = await call('saveVote', { items }); myVote = j.myVote; toast(myVote ? '투표했습니다' : '투표를 취소했습니다'); draftReady = false; renderVote(); }
   catch (e) { toast(e.message); b.disabled = false; }
 }
@@ -687,8 +707,9 @@ async function renderSettings() {
       <table><tr><th>관리 메뉴</th><th>관리자</th><th>매니저</th><th>참여자</th></tr>
         ${[['menu', '등록'], ['results', '결과 보기'], ['order', '주문'], ['settings', '설정 · 페이지/가입 방식'], ['users', '설정 · 계정 명단'], ['logs', '설정 · 로그인 로그']].map(([k, n]) => `<tr><td>${n}</td><td>✔</td><td><input type="checkbox" ${p[k] ? 'checked' : ''} onchange="setPerm('${k}',this.checked)"></td><td>—</td></tr>`).join('')}</table>`);
     }
+    window._lg = null;
     if (can('users')) {
-      userList = (await call('users')).users;
+      const [ju, jl] = await Promise.all([call('users'), can('logs') ? call('logs') : Promise.resolve(null)]); userList = ju.users; window._lg = jl;
       h += foldCard('s_users', `계정 명단 (${userList.length})`, `
         <label class="f">이름 미리 등록 (쉼표 또는 줄바꿈으로 여러 명)</label>
         <div class="row" style="flex-wrap:nowrap;align-items:flex-start"><textarea id="u-add" style="min-height:44px;height:44px" placeholder="홍길동, 김철수"></textarea><button class="btn sm" style="white-space:nowrap;min-height:44px" onclick="addUsers()">추가</button></div>
@@ -702,7 +723,7 @@ async function renderSettings() {
         <p class="muted" style="margin-bottom:0">● 초록 점은 비밀번호 설정됨, 회색은 미설정입니다. 추가한 이름은 참여자로 입장하며 관리자 권한은 줄 수 없습니다. ↺ 참여자 비밀번호를 초기화하면 다음 입장 때 본인이 새로 정하고, 매니저는 임시 비밀번호 0000, 관리자는 000000이 되어 다음 입장 때 변경해야 합니다. 관리자 비밀번호는 6자리입니다.</p>`);
     }
     if (can('logs')) {
-      const lg = (await call('logs')).logs;
+      const lg = window._lg ? window._lg.logs : (await call('logs')).logs;
       h += foldCard('s_logs', `로그인 로그 (최근 ${lg.length}건)`, `<div class="row" style="margin-bottom:8px"><button class="btn sec sm" onclick="renderSettings()">새로고침</button>${me.role === 'admin' ? '<button class="btn bad sm" onclick="clearLogs()">로그 지우기</button>' : ''}</div>
       <div class="scroll"><table><tr><th>시간</th><th>이름</th><th>내용</th></tr>${lg.map(l => `<tr><td class="nw">${fmtT(l.t)}</td><td>${esc(l.name)}</td><td>${esc(l.ev)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">기록 없음</td></tr>'}</table></div>`);
     }
