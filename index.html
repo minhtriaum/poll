@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#3b6cf6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Snack Poll v1.26</title>
+<title>Snack Poll v1.27</title>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--ink:#1d2433;--sub:#6b7488;--line:#e3e7ef;--acc:#3b6cf6;--acc2:#e8eeff;--ok:#1f9d63;--bad:#d64545;--warn:#b7791f}
 *{box-sizing:border-box}
@@ -80,7 +80,6 @@ input.pick[type=checkbox]{border-radius:50%}
 canvas#rc{width:100%;max-width:420px;border:1px solid var(--line);border-radius:10px;margin-top:8px}
 pre.txt{background:#f7f8fb;border:1px solid var(--line);border-radius:10px;padding:10px;white-space:pre-wrap;font:13px/1.55 inherit;margin:8px 0 0}
 
-/* ===== v1.23 모바일 최적화 ===== */
 html{-webkit-text-size-adjust:100%}
 body{-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
 button,input,select,textarea,label,a{touch-action:manipulation}
@@ -124,7 +123,6 @@ td.nw{white-space:nowrap}
   .lrow .lbar{grid-column:1/3;order:3}
 }
 
-/* ===== v1.25 등록 화면 ===== */
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 input[type=number]{-moz-appearance:textfield;appearance:textfield}
 input::placeholder,textarea::placeholder{color:#a8b0c0}
@@ -158,10 +156,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 <div id="modalRoot"></div>
 
 <script>
-/* ===== 기본 설정 ===== */
-const VERSION = 'v1.26';
-// Google Apps Script 웹앱 주소(.../exec). 배포할 때 여기에 넣어 두면 모든 사용자가 자동으로 같은 서버를 씁니다.
-const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbx5G7BJgUtYsXP-gu3ZjVU8vt9k6H1J3wWmbHU9eezQxuzeBdUwhdk5AlgmJDAW7ew/exec';
+const VERSION = 'v1.27';
+const _AE = '';
+const _dec = e => { try { return decodeURIComponent(escape(atob(e.split('').reverse().join('')))); } catch (x) { return ''; } };
+const _enc = u => btoa(unescape(encodeURIComponent(u))).split('').reverse().join('');
+const maskApi = u => u ? u.replace(/(\/s\/)(.{4}).*(.{4})(\/exec)/, '$1$2••••••••$3$4') : '';
+const DEFAULT_API_URL = _dec(_AE);
 
 let liveOpen = false, liveData = null, orderPick = false, orderSel = new Set(), order = null, orderVoters = [], saveTimer = null;
 let API = (localStorage.getItem('vw_api') || DEFAULT_API_URL).trim();
@@ -176,14 +176,12 @@ const fmtT = t => { const d = new Date(t), p = x => String(x).padStart(2, '0'); 
 const toLocalInput = iso => { if (!iso) return ''; const d = new Date(iso); if (isNaN(d)) return ''; const p = x => String(x).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
 function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2200); }
 
-/* ===== 서버 호출 (Apps Script 웹앱) ===== */
 async function api(action, data = {}) {
   if (!API) throw new Error('서버 주소가 설정되지 않았습니다');
   const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, token: localStorage.getItem('vw_tok') || '', ...data }) });
   if (!r.ok) throw new Error('서버 응답 오류 ' + r.status);
   return r.json();
 }
-// 오류면 예외, 로그인 만료면 로그인 화면으로
 async function call(action, data) {
   const j = await api(action, data);
   if (j.auth) { localStorage.removeItem('vw_tok'); me = null; stopTimers(); renderLogin(j.err); throw new Error(j.err); }
@@ -192,7 +190,6 @@ async function call(action, data) {
 }
 function stopTimers() { clearInterval(pollTimer); clearInterval(tickTimer); }
 
-/* ===== 상태 ===== */
 async function loadState() {
   const j = await call('state');
   me = j.me; cfg = j.cfg; menus = j.menus; myVote = j.myVote;
@@ -203,7 +200,6 @@ const isOpen = () => { if (cfg.closed) return false; if (cfg.deadline && Date.no
 const can = f => !!(me && me.can && me.can[f]);
 const canSettings = () => can('settings') || can('users') || can('logs') || me.role === 'admin';
 
-/* ===== 시작 / 로그인 ===== */
 async function init() {
   if (!API) return renderLogin();
   try {
@@ -221,7 +217,7 @@ function renderLogin(err) {
     <div class="card">
       ${err ? `<div class="banner bad">${esc(err)}</div>` : ''}
       ${setup ? `<div class="banner">서버 주소가 아직 설정되지 않았습니다. 관리자는 Apps Script 웹앱 주소를 입력해 주세요.</div>
-        <label class="f">서버 주소 (…/exec)</label><input type="url" id="lg-api" placeholder="https://script.google.com/macros/s/…/exec">
+        <label class="f">서버 주소 (…/exec)</label><input type="password" autocomplete="off" id="lg-api" placeholder="https://script.google.com/macros/s/…/exec">
         <div class="row" style="margin-top:8px"><button class="btn sm" onclick="saveApi('#lg-api')">저장</button></div>`
       : `${cfg.mode === 'code' ? `<label class="f">입장 코드 (새 이름으로 처음 입장할 때만)</label><input type="text" id="lg-code" autocomplete="off"><div style="height:8px"></div>` : ''}
       <label class="f">이름</label><input type="text" id="lg-name" autocomplete="username" maxlength="20">
@@ -233,6 +229,10 @@ function renderLogin(err) {
     </div>
   </div>`;
   if (!setup) ['#lg-name', '#lg-pw'].forEach(s => $(s).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
+}
+function makeEnc() {
+  const u = API; if (!u) return toast('서버 주소가 없습니다');
+  openModal(`<h3>배포용 암호문</h3><p class="muted">HTML 상단의 <b>const _AE = '';</b> 따옴표 안에 아래 값을 붙여넣으면 서버 주소가 소스에 그대로 보이지 않습니다. (눈에 띄지 않게 하는 용도이며, 완전한 비밀 보호는 아닙니다)</p><textarea readonly id="enc-out" onclick="this.select()" style="height:90px">${esc(_enc(u))}</textarea><div class="row" style="margin-top:8px"><button class="btn" onclick="document.getElementById('enc-out').select();document.execCommand('copy');toast('복사했습니다')">복사</button><button class="btn sec" onclick="closeModal()">닫기</button></div>`);
 }
 function saveApi(sel) {
   const v = $(sel).value.trim();
@@ -274,7 +274,6 @@ async function logout() {
   localStorage.removeItem('vw_tok'); me = null; draftReady = false; stopTimers(); renderLogin();
 }
 
-/* ===== 앱 셸 ===== */
 function enter(silent) {
   page = 'vote'; draftReady = false; lastSig = sig(); shell(); stopTimers();
   pollTimer = setInterval(poll, 15000); tickTimer = setInterval(tick, 1000);
@@ -322,7 +321,6 @@ function tick() {
   el.textContent = `마감까지 ${d ? d + '일 ' : ''}${h}시간 ${m}분 ${s % 60}초`;
 }
 
-/* ===== 투표 ===== */
 function renderVote() {
   const open = isOpen(), mine = myVote;
   if (!draftReady) { draft = { ...((mine && mine.items) || {}) }; draftReady = true; }
@@ -403,7 +401,6 @@ async function submitVote() {
   catch (e) { toast(e.message); b.disabled = false; }
 }
 
-/* ===== 메뉴 등록 ===== */
 let menuFold = (() => { try { return JSON.parse(localStorage.getItem('sp_fold')) || {}; } catch (e) { return {}; } })();
 const FOLD_KEYS = ['opts', 'item', 'blink', 'bname', 'list'];
 function saveFold() { try { localStorage.setItem('sp_fold', JSON.stringify(menuFold)); } catch (e) {} }
@@ -515,7 +512,6 @@ async function delAllMenus() {
   try { await call('menuClear'); await loadState(); renderMenu(); } catch (e) { toast(e.message); }
 }
 
-/* ===== 결과 ===== */
 async function loadResults() { const j = await call('results'); votes = j.votes; resUsers = j.users; }
 function calc() {
   const per = {}; menus.forEach(m => per[m.id] = { m, qty: 0, voters: 0 });
@@ -630,7 +626,6 @@ async function shareImg() {
   if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: cfg.title }); } catch {} } else saveImg();
 }
 
-/* ===== 설정 ===== */
 async function renderSettings() {
   let h = `<div class="pagehead"><h2 style="margin:6px 0">설정</h2></div>`;
   try {
@@ -675,10 +670,10 @@ async function renderSettings() {
   } catch (e) { return; }
   if (me.role === 'admin') h += `
   <div class="card"><h2>연결 설정</h2>
-    <p class="muted">현재 서버: ${DEFAULT_API_URL && API === DEFAULT_API_URL ? '코드에 설정된 주소 사용 중' : esc(API)}</p>
+    <p class="muted">현재 서버: ${DEFAULT_API_URL && API === DEFAULT_API_URL ? '코드에 설정된 주소 사용 중 (가려짐)' : esc(maskApi(API))}</p>
     <label class="f">서버 주소 변경 (이 기기에서만 적용 · 비우면 코드의 기본 주소 사용)</label>
-    <input type="url" id="s-api" value="${esc(localStorage.getItem('vw_api') || '')}" placeholder="https://script.google.com/macros/s/…/exec">
-    <div class="row" style="margin-top:8px"><button class="btn sm" onclick="saveApi('#s-api')">저장</button></div></div>`;
+    <input type="password" autocomplete="off" id="s-api" value="" placeholder="변경할 때만 입력 (…/exec)">
+    <div class="row" style="margin-top:8px"><button class="btn sm" onclick="saveApi('#s-api')">저장</button><button class="btn sec sm" onclick="makeEnc()">배포용 암호문 만들기</button></div></div>`;
   if ($('#main')) $('#main').innerHTML = h;
 }
 async function saveBasic() {
@@ -703,14 +698,12 @@ async function delUser(i) {
 }
 async function clearLogs() { if (!confirm('로그인 로그를 모두 지울까요?')) return; try { await call('clearLogs'); renderSettings(); } catch (e) { toast(e.message); } }
 
-/* ===== 모달 ===== */
 function openModal(html, locked) {
   $('#modalRoot').innerHTML = `<div class="overlay" ${locked ? '' : 'onclick="if(event.target===this)closeModal()"'}><div class="modal">${html}</div></div>`;
 }
 function closeModal() { $('#modalRoot').innerHTML = ''; }
 
 
-/* ===== 제품 리스트 내보내기 / 불러오기 (CSV) ===== */
 const MENU_HEAD = ['제품이름', '종류', '포장단위', '가격', '링크', '사진주소'];
 const csvEsc = v => { v = String(v ?? ''); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
 function exportMenus() {
@@ -769,7 +762,6 @@ async function doImport(replace) {
 }
 
 
-/* ===== 제품 이름으로 일괄 등록 ===== */
 function namesToItems(text) {
   const out = [];
   text.split(/\r?\n/).forEach(line => {
@@ -794,7 +786,6 @@ async function bulkNames() {
 }
 
 
-/* ===== 주문 페이지 ===== */
 async function renderOrder() {
   if (!$('#main')) return;
   try { const j = await call('orderGet'); order = j.order; orderVoters = j.voters; } catch (e) { return; }
