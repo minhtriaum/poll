@@ -161,7 +161,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 /* ===== 기본 설정 ===== */
 const VERSION = 'v1.26';
 // Google Apps Script 웹앱 주소(.../exec). 배포할 때 여기에 넣어 두면 모든 사용자가 자동으로 같은 서버를 씁니다.
-const DEFAULT_API_URL = '';
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbx5G7BJgUtYsXP-gu3ZjVU8vt9k6H1J3wWmbHU9eezQxuzeBdUwhdk5AlgmJDAW7ew/exec';
 
 let liveOpen = false, liveData = null, orderPick = false, orderSel = new Set(), order = null, orderVoters = [], saveTimer = null;
 let API = (localStorage.getItem('vw_api') || DEFAULT_API_URL).trim();
