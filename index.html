@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#3b6cf6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Snack Poll v1.27</title>
+<title>Snack Poll v1.3</title>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--ink:#1d2433;--sub:#6b7488;--line:#e3e7ef;--acc:#3b6cf6;--acc2:#e8eeff;--ok:#1f9d63;--bad:#d64545;--warn:#b7791f}
 *{box-sizing:border-box}
@@ -148,6 +148,44 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 .tchip:active{background:var(--acc2);color:var(--acc)}
 .foldbar{display:flex;gap:8px;justify-content:flex-end;margin:6px 0 0}
 @media (max-width:520px){.ff{grid-template-columns:1fr 1fr}.ff .m1{grid-column:1/-1}}
+
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;flex:none}
+.seg button{border:0;background:#fff;color:var(--sub);padding:0 10px;font-size:13px;min-height:34px;cursor:pointer;font-family:inherit}
+.seg button+button{border-left:1.5px solid var(--line)}
+.seg button.on{background:var(--acc);color:#fff;font-weight:700}
+.ur{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.ur:last-of-type{border-bottom:0}
+.ur .un{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ur .dot{width:8px;height:8px;border-radius:50%;background:#cbd2de;flex:none}
+.ur .dot.on{background:#2fb36b}
+.ib{width:34px;height:34px;min-height:34px;border:1.5px solid var(--line);background:#fff;border-radius:10px;cursor:pointer;font-size:15px;color:var(--sub);flex:none;padding:0}
+.ib.bad{color:#d33;border-color:#f3c9c9}
+@media (max-width:380px){.seg button{padding:0 7px;font-size:12px}.ur{gap:6px}}
+
+/* v1.3 컴팩트 폼 */
+.ff{gap:10px 10px!important}
+.ff .full{grid-column:1/-1}
+.fld{gap:3px}
+.fld>label{font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.fld>label small{margin-left:4px}
+.ff .fld input,.ff .sfx input{min-height:38px!important;height:38px;padding:5px 10px!important;font-size:16px;border-radius:10px;border-width:1px}
+.ff .sfx input{padding-right:30px!important}
+.ff .sfx span{right:10px;font-size:14px}
+.ff .sfx.th input{padding-right:40px!important;text-align:left}
+.ff .thumb{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:6px}
+.lnk{border:0;background:var(--acc2);color:var(--acc);border-radius:6px;font-size:12px;font-weight:700;padding:2px 8px;min-height:22px!important;cursor:pointer;font-family:inherit}
+.tchips.full{gap:5px;margin-top:-4px}
+.tchip{min-height:26px!important;padding:2px 10px;font-size:12px}
+#f-msg{font-size:12px;margin-top:-2px}
+@media (max-width:520px){
+  .grid{grid-template-columns:1fr!important}
+  .foldbar .btn,.pagehead .btn{min-height:36px}
+  .card{padding:12px}
+  .fold .fh{min-height:36px}
+  table{font-size:13px}
+  th,td{padding:6px 4px}
+}
+@media (max-width:360px){.ff{gap:8px 8px!important}.fld>label small{display:none}}
 </style>
 </head>
 <body>
@@ -156,7 +194,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 <div id="modalRoot"></div>
 
 <script>
-const VERSION = 'v1.27';
+const VERSION = 'v1.3';
 const _AE = '';
 const _dec = e => { try { return decodeURIComponent(escape(atob(e.split('').reverse().join('')))); } catch (x) { return ''; } };
 const _enc = u => btoa(unescape(encodeURIComponent(u))).split('').reverse().join('');
@@ -222,7 +260,7 @@ function renderLogin(err) {
       : `${cfg.mode === 'code' ? `<label class="f">입장 코드 (새 이름으로 처음 입장할 때만)</label><input type="text" id="lg-code" autocomplete="off"><div style="height:8px"></div>` : ''}
       <label class="f">이름</label><input type="text" id="lg-name" autocomplete="username" maxlength="20">
       <div style="height:8px"></div>
-      <label class="f">비밀번호 (숫자 4자리)</label><input type="password" id="lg-pw" inputmode="numeric" maxlength="4" autocomplete="current-password">
+      <label class="f">비밀번호 (숫자 · 참여자/매니저 4자리, 관리자 6자리)</label><input type="password" id="lg-pw" inputmode="numeric" maxlength="6" autocomplete="current-password">
       <div style="height:12px"></div>
       <button class="btn" style="width:100%" id="lg-go" onclick="doLogin()">입장</button>
       <p class="muted" style="margin:10px 0 0">${cfg.mode === 'code' ? '처음 쓰는 이름이면 계정이 새로 만들어지고, 다음부터는 같은 이름·비밀번호로 입장합니다.' : '관리자가 등록한 이름으로 입장합니다. 처음 입장할 때 입력한 비밀번호가 내 비밀번호가 됩니다.'}</p>`}
@@ -243,7 +281,7 @@ function saveApi(sel) {
 async function doLogin(confirmed) {
   const name = $('#lg-name').value.trim(), pw = $('#lg-pw').value.trim(), code = $('#lg-code') ? $('#lg-code').value.trim() : '';
   if (!name) return toast('이름을 입력하세요');
-  if (!/^\d{4}$/.test(pw)) return toast('비밀번호는 숫자 4자리입니다');
+  if (!/^(\d{4}|\d{6})$/.test(pw)) return toast('비밀번호는 숫자 4자리입니다 (관리자는 6자리)');
   const btn = $('#lg-go'); btn.disabled = true; btn.textContent = '확인 중…';
   try {
     const j = await api('login', { name, pw, code, confirm: confirmed === true });
@@ -251,18 +289,19 @@ async function doLogin(confirmed) {
     if (j.need === 'create') { btn.disabled = false; btn.textContent = '입장'; if (confirm(`"${j.name}" 은(는) 새 이름입니다.\n이 이름과 비밀번호로 계정을 만들까요?`)) return doLogin(true); return; }
     if (j.err) return renderLogin(j.err);
     localStorage.setItem('vw_tok', j.token);
-    if (j.mustChange) return forceChange();
+    if (j.mustChange) return forceChange(j.me && j.me.role === 'admin' ? 6 : 4);
     await loadState(); enter();
   } catch (e) { renderLogin('오류: ' + e.message); }
 }
-function forceChange() {
-  openModal(`<h3>비밀번호 변경</h3><p class="muted">초기 비밀번호입니다. 새 비밀번호 4자리를 정해 주세요.</p>
-    <input type="password" id="np1" inputmode="numeric" maxlength="4" placeholder="새 비밀번호 4자리">
-    <div style="height:8px"></div><input type="password" id="np2" inputmode="numeric" maxlength="4" placeholder="한 번 더 입력">
+function forceChange(n) {
+  n = n || 4;
+  openModal(`<h3>비밀번호 변경</h3><p class="muted">${n === 6 ? '관리자 비밀번호는 숫자 6자리입니다. ' : ''}새 비밀번호 ${n}자리를 정해 주세요.</p>
+    <input type="password" id="np1" inputmode="numeric" maxlength="${n}" placeholder="새 비밀번호 ${n}자리">
+    <div style="height:8px"></div><input type="password" id="np2" inputmode="numeric" maxlength="${n}" placeholder="한 번 더 입력">
     <div class="row" style="margin-top:12px"><button class="btn" id="npok">변경하고 입장</button></div>`, true);
   $('#npok').onclick = async () => {
     const a = $('#np1').value, b = $('#np2').value;
-    if (!/^\d{4}$/.test(a)) return toast('숫자 4자리로 입력하세요');
+    if (!new RegExp('^\\d{' + n + '}$').test(a)) return toast(`숫자 ${n}자리로 입력하세요`);
     if (a !== b) return toast('두 번 입력한 값이 다릅니다');
     const j = await api('changePw', { pw: a });
     if (j.err) return toast(j.err);
@@ -432,19 +471,16 @@ function renderMenu() {
     <div class="row" style="margin-top:10px"><button class="btn" onclick="saveOpts()">옵션 저장</button><button class="btn sec" onclick="document.getElementById('o-dl').value=''">마감 시간 지우기</button></div>`;
   const itemBody = `
     <div class="ff">
-      <div class="fld full"><label>제품 이름 <small>필수</small></label><input type="text" id="f-name" value="${esc(e ? e.name : '')}" placeholder="예: 아메리카노" autocomplete="off"></div>
-      <div class="fld full"><label>종류 <small>입력한 종류는 기억해서 목록에 보여줘요</small></label>
-        <input type="text" id="f-type" list="dl-types" value="${esc(e ? e.type : '')}" placeholder="예: 커피" autocomplete="off">
-        <datalist id="dl-types">${types.map(t => `<option value="${esc(t)}">`).join('')}</datalist>
-        ${types.length ? `<div class="tchips">${types.slice(0, 10).map(t => `<button type="button" class="tchip" data-t="${esc(t)}" onclick="setType(this.dataset.t)">${esc(t)}</button>`).join('')}</div>` : ''}</div>
-      <div class="fld"><label>포장 단위</label><input type="text" id="f-unit" value="${esc(e ? e.unit : '')}" placeholder="예: 1박스(10개입)" autocomplete="off"></div>
+      <div class="fld"><label>제품 이름 <small>필수</small></label><input type="text" id="f-name" value="${esc(e ? e.name : '')}" placeholder="아메리카노" autocomplete="off"></div>
+      <div class="fld"><label>종류</label><input type="text" id="f-type" list="dl-types" value="${esc(e ? e.type : '')}" placeholder="커피" autocomplete="off"><datalist id="dl-types">${types.map(t => `<option value="${esc(t)}">`).join('')}</datalist></div>
+      ${types.length ? `<div class="tchips full">${types.slice(0, 10).map(t => `<button type="button" class="tchip" data-t="${esc(t)}" onclick="setType(this.dataset.t)">${esc(t)}</button>`).join('')}</div>` : ''}
+      <div class="fld"><label>포장 단위</label><input type="text" id="f-unit" value="${esc(e ? e.unit : '')}" placeholder="1박스(10개입)" autocomplete="off"></div>
       <div class="fld"><label>가격</label><div class="sfx"><input type="number" id="f-price" min="0" inputmode="numeric" value="${e ? e.price || '' : ''}" placeholder="0"><span>원</span></div></div>
-      <div class="fld full"><label>제품 사진 주소</label><div class="row" style="flex-wrap:nowrap;gap:10px"><input type="url" id="f-img" value="${esc(e ? e.image : '')}" placeholder="https://… (링크에서 가져오거나 직접 입력)" oninput="setThumb()"><img id="f-thumb" class="thumb" alt="" onerror="this.style.display='none'"></div></div>
-      <div class="fld full"><label>링크 <small>선택</small></label>
-        <div class="row" style="flex-wrap:nowrap;gap:8px"><input type="url" id="f-link" value="${esc(e ? e.link : '')}" placeholder="https://…"><button class="btn sec" type="button" style="white-space:nowrap" onclick="fillFromLink()">가져오기</button></div>
-        <div id="f-msg" class="muted">링크를 넣고 "가져오기"를 누르면 이름·사진·가격을 채워 줘요. 사이트에 따라 안 될 수 있어요.</div></div>
+      <div class="fld"><label>사진 주소</label><div class="sfx th"><input type="url" id="f-img" value="${esc(e ? e.image : '')}" placeholder="https://…" oninput="setThumb()"><img id="f-thumb" class="thumb" alt="" onerror="this.style.display='none'"></div></div>
+      <div class="fld"><label>링크 <button type="button" class="lnk" onclick="fillFromLink()">가져오기</button></label><input type="url" id="f-link" value="${esc(e ? e.link : '')}" placeholder="https://…"></div>
+      <div id="f-msg" class="muted full">링크를 넣고 "가져오기"를 누르면 이름·사진·가격을 채워 줘요. 사이트에 따라 안 될 수 있어요.</div>
     </div>
-    <div class="row" style="margin-top:16px"><button class="btn" onclick="saveItem()">${e ? '수정 저장' : '등록'}</button>${e ? '<button class="btn sec" onclick="editId=null;renderMenu()">취소</button>' : ''}</div>`;
+    <div class="row" style="margin-top:10px"><button class="btn" onclick="saveItem()">${e ? '수정 저장' : '등록'}</button>${e ? '<button class="btn sec" onclick="editId=null;renderMenu()">취소</button>' : ''}</div>`;
   const blinkBody = `
     <textarea id="b-list" placeholder="한 줄에 링크 하나씩 붙여넣기&#10;(링크 앞뒤에 제품 이름을 적으면 이름으로 사용)"></textarea>
     <div class="row" style="margin-top:8px"><button class="btn" onclick="bulkAdd()">일괄 등록</button><span class="muted" id="b-msg"></span></div>`;
@@ -463,8 +499,8 @@ function renderMenu() {
     <div class="foldbar"><button class="btn sec sm" onclick="foldAll(false)">모두 펼치기</button><button class="btn sec sm" onclick="foldAll(true)">모두 접기</button></div>
     ${foldCard('opts', '투표 옵션', optsBody)}
     ${foldCard('item', e ? '제품 수정' : '제품 등록', itemBody)}
-    ${foldCard('blink', '링크 리스트로 일괄 등록', blinkBody)}
-    ${foldCard('bname', '제품 이름으로 일괄 등록', bnameBody)}
+    ${cfg.showBulkLink !== false ? foldCard('blink', '링크 리스트로 일괄 등록', blinkBody) : ''}
+    ${cfg.showBulkName !== false ? foldCard('bname', '제품 이름으로 일괄 등록', bnameBody) : ''}
     ${foldCard('list', `등록된 제품 (${menus.length})`, listBody)}`;
   setThumb();
 }
@@ -626,11 +662,12 @@ async function shareImg() {
   if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: cfg.title }); } catch {} } else saveImg();
 }
 
+const SET_KEYS = ['s_basic', 's_perm', 's_users', 's_logs', 's_conn'];
+function foldAllS(closed) { SET_KEYS.forEach(k => menuFold[k] = closed); saveFold(); renderSettings(); }
 async function renderSettings() {
-  let h = `<div class="pagehead"><h2 style="margin:6px 0">설정</h2></div>`;
+  let h = `<div class="pagehead"><h2 style="margin:6px 0">설정</h2></div><div class="foldbar" style="margin:0 0 4px"><button class="btn sec sm" onclick="foldAllS(false)">모두 펼치기</button><button class="btn sec sm" onclick="foldAllS(true)">모두 접기</button></div>`;
   try {
-    if (can('settings')) h += `
-    <div class="card"><h2>페이지 설정</h2>
+    if (can('settings')) h += foldCard('s_basic', '페이지 설정', `
       <div class="grid"><div><label class="f">페이지 제목</label><input type="text" id="s-title" value="${esc(cfg.title)}"></div>
         <div><label class="f">가입 방식</label><select id="s-mode" onchange="document.getElementById('s-codebox').style.display=this.value==='code'?'block':'none'">
           <option value="list" ${cfg.mode !== 'code' ? 'selected' : ''}>사전 등록 명단만 입장</option><option value="code" ${cfg.mode === 'code' ? 'selected' : ''}>입장 코드로 자가 가입</option></select></div>
@@ -638,47 +675,48 @@ async function renderSettings() {
           <label class="row" style="gap:6px"><input type="checkbox" id="s-showqty" ${cfg.showQty !== false ? 'checked' : ''}> 수량 선택·표시</label>
           <label class="row" style="gap:6px"><input type="checkbox" id="s-showprice" ${cfg.showPrice !== false ? 'checked' : ''}> 금액 표시</label>
           <label class="row" style="gap:6px"><input type="checkbox" id="s-showtotal" ${cfg.showTotal !== false ? 'checked' : ''}> 내 선택 합계 (하단)</label></div>
+        <div><label class="f">등록 화면 표시</label>
+          <label class="row" style="gap:6px"><input type="checkbox" id="s-bulklink" ${cfg.showBulkLink !== false ? 'checked' : ''}> 링크 리스트로 일괄 등록</label>
+          <label class="row" style="gap:6px"><input type="checkbox" id="s-bulkname" ${cfg.showBulkName !== false ? 'checked' : ''}> 제품 이름으로 일괄 등록</label></div>
         <div id="s-codebox" style="display:${cfg.mode === 'code' ? 'block' : 'none'}"><label class="f">입장 코드 (비우면 코드 없이 가입)</label><input type="text" id="s-code" value="${esc(cfg.code || '')}"></div></div>
       <p class="muted" style="margin-bottom:0">명단 방식에서는 아래 계정 명단에 등록된 이름만 입장할 수 있어 입장 코드가 필요 없습니다.</p>
-      <div class="row" style="margin-top:10px"><button class="btn" onclick="saveBasic()">저장</button></div></div>`;
+      <div class="row" style="margin-top:10px"><button class="btn" onclick="saveBasic()">저장</button></div>`);
     if (me.role === 'admin') {
       const p = cfg.perms.manager;
-      h += `<div class="card"><h2>관리 메뉴 노출 권한</h2><p class="muted">관리자는 모든 메뉴가 보입니다. 매니저에게 보여줄 관리 메뉴를 고르세요.</p>
+      h += foldCard('s_perm', '관리 메뉴 노출 권한', `<p class="muted">관리자는 모든 메뉴가 보입니다. 매니저에게 보여줄 관리 메뉴를 고르세요.</p>
       <table><tr><th>관리 메뉴</th><th>관리자</th><th>매니저</th><th>참여자</th></tr>
-        ${[['menu', '등록'], ['results', '결과 보기'], ['order', '주문'], ['settings', '설정 · 페이지/가입 방식'], ['users', '설정 · 계정 명단'], ['logs', '설정 · 로그인 로그']].map(([k, n]) => `<tr><td>${n}</td><td>✔</td><td><input type="checkbox" ${p[k] ? 'checked' : ''} onchange="setPerm('${k}',this.checked)"></td><td>—</td></tr>`).join('')}</table></div>`;
+        ${[['menu', '등록'], ['results', '결과 보기'], ['order', '주문'], ['settings', '설정 · 페이지/가입 방식'], ['users', '설정 · 계정 명단'], ['logs', '설정 · 로그인 로그']].map(([k, n]) => `<tr><td>${n}</td><td>✔</td><td><input type="checkbox" ${p[k] ? 'checked' : ''} onchange="setPerm('${k}',this.checked)"></td><td>—</td></tr>`).join('')}</table>`);
     }
     if (can('users')) {
       userList = (await call('users')).users;
-      h += `
-      <div class="card"><h2>계정 명단 (${userList.length})</h2>
+      h += foldCard('s_users', `계정 명단 (${userList.length})`, `
         <label class="f">이름 미리 등록 (쉼표 또는 줄바꿈으로 여러 명)</label>
-        <textarea id="u-add" style="min-height:64px" placeholder="홍길동, 김철수&#10;이영희"></textarea>
-        <div class="row" style="margin:8px 0 12px"><button class="btn sm" onclick="addUsers()">명단에 추가</button></div>
-        <div>
+        <div class="row" style="flex-wrap:nowrap;align-items:flex-start"><textarea id="u-add" style="min-height:44px;height:44px" placeholder="홍길동, 김철수"></textarea><button class="btn sm" style="white-space:nowrap;min-height:44px" onclick="addUsers()">추가</button></div>
+        <div style="margin-top:8px">
         ${userList.map((u, i) => { const self = u.name.toLowerCase() === me.name.toLowerCase(); const editable = me.role === 'admin' || u.role === 'user';
-          const roleCell = me.role === 'admin' && !self ? `<select onchange="setRole(${i},this.value)"><option value="user" ${u.role === 'user' ? 'selected' : ''}>참여자</option><option value="manager" ${u.role === 'manager' ? 'selected' : ''}>매니저</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>관리자</option></select>` : `<span class="chip gray">${{ admin: '관리자', manager: '매니저', user: '참여자' }[u.role]}</span>`;
-          return `<div class="urow"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span class="un">${esc(u.name)}</span><span>${roleCell}</span></div>
-          <div class="muted" style="margin:4px 0 8px">비밀번호 ${u.hasPw ? '설정됨' : '미설정'} · 최근 입장 ${u.last ? fmtT(u.last) : '-'}</div>
-          <div class="row">${editable ? `<button class="btn sec sm" onclick="resetPw(${i})">비번 초기화</button>` : ''}${me.role === 'admin' && !self ? `<button class="btn bad sm" onclick="delUser(${i})">삭제</button>` : ''}</div></div>`; }).join('')}</div>
-        <p class="muted">참여자 비밀번호를 초기화하면 다음 입장 때 본인이 새로 정합니다. 매니저·관리자는 임시 비밀번호 0000이 되고 다음 입장 때 변경해야 합니다.</p></div>`;
+          const fixed = u.role === 'admin' || self || me.role !== 'admin';
+          const roleCell = fixed ? `<span class="chip gray">${{ admin: '관리자', manager: '매니저', user: '참여자' }[u.role]}</span>`
+            : `<div class="seg"><button class="${u.role === 'user' ? 'on' : ''}" onclick="setRole(${i},'user')">참여자</button><button class="${u.role === 'manager' ? 'on' : ''}" onclick="setRole(${i},'manager')">매니저</button></div>`;
+          return `<div class="ur"><span class="dot ${u.hasPw ? 'on' : ''}" title="비밀번호 ${u.hasPw ? '설정됨' : '미설정'} · 최근 입장 ${u.last ? fmtT(u.last) : '-'}"></span><span class="un" title="최근 입장 ${u.last ? fmtT(u.last) : '-'}">${esc(u.name)}</span>${roleCell}
+          ${editable ? `<button class="ib" title="비밀번호 초기화" aria-label="비밀번호 초기화" onclick="resetPw(${i})">↺</button>` : ''}${me.role === 'admin' && !self && u.role !== 'admin' ? `<button class="ib bad" title="삭제" aria-label="삭제" onclick="delUser(${i})">✕</button>` : ''}</div>`; }).join('')}</div>
+        <p class="muted" style="margin-bottom:0">● 초록 점은 비밀번호 설정됨, 회색은 미설정입니다. 추가한 이름은 참여자로 입장하며 관리자 권한은 줄 수 없습니다. ↺ 참여자 비밀번호를 초기화하면 다음 입장 때 본인이 새로 정하고, 매니저는 임시 비밀번호 0000, 관리자는 000000이 되어 다음 입장 때 변경해야 합니다. 관리자 비밀번호는 6자리입니다.</p>`);
     }
     if (can('logs')) {
       const lg = (await call('logs')).logs;
-      h += `<div class="card"><div class="pagehead"><h2>로그인 로그 (최근 ${lg.length}건)</h2><div class="row"><button class="btn sec sm" onclick="renderSettings()">새로고침</button>${me.role === 'admin' ? '<button class="btn bad sm" onclick="clearLogs()">로그 지우기</button>' : ''}</div></div>
-      <div class="scroll"><table><tr><th>시간</th><th>이름</th><th>내용</th></tr>${lg.map(l => `<tr><td class="nw">${fmtT(l.t)}</td><td>${esc(l.name)}</td><td>${esc(l.ev)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">기록 없음</td></tr>'}</table></div></div>`;
+      h += foldCard('s_logs', `로그인 로그 (최근 ${lg.length}건)`, `<div class="row" style="margin-bottom:8px"><button class="btn sec sm" onclick="renderSettings()">새로고침</button>${me.role === 'admin' ? '<button class="btn bad sm" onclick="clearLogs()">로그 지우기</button>' : ''}</div>
+      <div class="scroll"><table><tr><th>시간</th><th>이름</th><th>내용</th></tr>${lg.map(l => `<tr><td class="nw">${fmtT(l.t)}</td><td>${esc(l.name)}</td><td>${esc(l.ev)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">기록 없음</td></tr>'}</table></div>`);
     }
   } catch (e) { return; }
-  if (me.role === 'admin') h += `
-  <div class="card"><h2>연결 설정</h2>
+  if (me.role === 'admin') h += foldCard('s_conn', '연결 설정', `
     <p class="muted">현재 서버: ${DEFAULT_API_URL && API === DEFAULT_API_URL ? '코드에 설정된 주소 사용 중 (가려짐)' : esc(maskApi(API))}</p>
     <label class="f">서버 주소 변경 (이 기기에서만 적용 · 비우면 코드의 기본 주소 사용)</label>
     <input type="password" autocomplete="off" id="s-api" value="" placeholder="변경할 때만 입력 (…/exec)">
-    <div class="row" style="margin-top:8px"><button class="btn sm" onclick="saveApi('#s-api')">저장</button><button class="btn sec sm" onclick="makeEnc()">배포용 암호문 만들기</button></div></div>`;
+    <div class="row" style="margin-top:8px"><button class="btn sm" onclick="saveApi('#s-api')">저장</button><button class="btn sec sm" onclick="makeEnc()">배포용 암호문 만들기</button></div>`);
   if ($('#main')) $('#main').innerHTML = h;
 }
 async function saveBasic() {
   try {
-    await call('basicSave', { title: $('#s-title').value.trim(), mode: $('#s-mode').value, code: $('#s-code') ? $('#s-code').value.trim() : cfg.code, showQty: $('#s-showqty').checked, showPrice: $('#s-showprice').checked, showTotal: $('#s-showtotal').checked });
+    await call('basicSave', { title: $('#s-title').value.trim(), mode: $('#s-mode').value, code: $('#s-code') ? $('#s-code').value.trim() : cfg.code, showQty: $('#s-showqty').checked, showPrice: $('#s-showprice').checked, showTotal: $('#s-showtotal').checked, showBulkLink: $('#s-bulklink').checked, showBulkName: $('#s-bulkname').checked });
     await loadState(); toast('저장했습니다'); shell();
   } catch (e) { toast(e.message); }
 }
@@ -690,7 +728,7 @@ async function addUsers() {
 async function setRole(i, role) { try { await call('setRole', { key: userList[i].key, role }); toast('권한을 변경했습니다'); } catch (e) { toast(e.message); } renderSettings(); }
 async function resetPw(i) {
   const u = userList[i]; if (!confirm(`${u.name} 의 비밀번호를 초기화할까요?`)) return;
-  try { const j = await call('resetPw', { key: u.key }); toast(j.temp ? '임시 비밀번호 0000으로 초기화했습니다' : '초기화했습니다 (다음 입장 때 새로 설정)'); renderSettings(); } catch (e) { toast(e.message); }
+  try { const j = await call('resetPw', { key: u.key }); toast(j.temp ? `임시 비밀번호 ${j.temp}(으)로 초기화했습니다` : '초기화했습니다 (다음 입장 때 새로 설정)'); renderSettings(); } catch (e) { toast(e.message); }
 }
 async function delUser(i) {
   const u = userList[i]; if (!confirm(`계정 "${u.name}" 과(와) 이 사람의 투표를 삭제할까요?`)) return;
