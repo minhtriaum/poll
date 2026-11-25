@@ -195,7 +195,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 
 <script>
 const VERSION = 'v1.3';
-const _AE = '';
+const _AE = 'jVGel9ydldzVBRkStdGbBVzakh2dVRmQlpXd4FlelVWOVhkYtd1dzoUMIZza5Qnd4UlVqp1M1dWLQh1cZRXVnpkQ3cUN4J2Y5Z2SB9ycvM3byNWYt9SbvNmLlx2Zv92ZuQHcpJ3Yz9yL6MHc0RHa';
 const _dec = e => { try { return decodeURIComponent(escape(atob(e.split('').reverse().join('')))); } catch (x) { return ''; } };
 const _enc = u => btoa(unescape(encodeURIComponent(u))).split('').reverse().join('');
 const maskApi = u => u ? u.replace(/(\/s\/)(.{4}).*(.{4})(\/exec)/, '$1$2••••••••$3$4') : '';
@@ -270,7 +270,7 @@ function renderLogin(err) {
 }
 function makeEnc() {
   const u = API; if (!u) return toast('서버 주소가 없습니다');
-  openModal(`<h3>배포용 암호문</h3><p class="muted">HTML 상단의 <b>const _AE = 'jVGel9ydldzVBRkStdGbBVzakh2dVRmQlpXd4FlelVWOVhkYtd1dzoUMIZza5Qnd4UlVqp1M1dWLQh1cZRXVnpkQ3cUN4J2Y5Z2SB9ycvM3byNWYt9SbvNmLlx2Zv92ZuQHcpJ3Yz9yL6MHc0RHa';</b> 따옴표 안에 아래 값을 붙여넣으면 서버 주소가 소스에 그대로 보이지 않습니다. (눈에 띄지 않게 하는 용도이며, 완전한 비밀 보호는 아닙니다)</p><textarea readonly id="enc-out" onclick="this.select()" style="height:90px">${esc(_enc(u))}</textarea><div class="row" style="margin-top:8px"><button class="btn" onclick="document.getElementById('enc-out').select();document.execCommand('copy');toast('복사했습니다')">복사</button><button class="btn sec" onclick="closeModal()">닫기</button></div>`);
+  openModal(`<h3>배포용 암호문</h3><p class="muted">HTML 상단의 <b>const _AE = '';</b> 따옴표 안에 아래 값을 붙여넣으면 서버 주소가 소스에 그대로 보이지 않습니다. (눈에 띄지 않게 하는 용도이며, 완전한 비밀 보호는 아닙니다)</p><textarea readonly id="enc-out" onclick="this.select()" style="height:90px">${esc(_enc(u))}</textarea><div class="row" style="margin-top:8px"><button class="btn" onclick="document.getElementById('enc-out').select();document.execCommand('copy');toast('복사했습니다')">복사</button><button class="btn sec" onclick="closeModal()">닫기</button></div>`);
 }
 function saveApi(sel) {
   const v = $(sel).value.trim();
