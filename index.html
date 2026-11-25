@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#3b6cf6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Snack Poll v1.26</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#1d2433;--sub:#6b7488;--line:#e3e7ef;--acc:#3b6cf6;--acc2:#e8eeff;--ok:#1f9d63;--bad:#d64545;--warn:#b7791f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+button,input,select,textarea{font:inherit}
+.wrap{max-width:860px;margin:0 auto;padding:12px 12px 110px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0}
+header.top h1{font-size:20px;margin:0}
+header.top h1 small{font-size:12px;color:var(--sub);font-weight:500;margin-left:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--acc2);color:var(--acc);border-radius:99px;padding:3px 10px;font-size:12px;font-weight:600}
+.chip.gray{background:#eceff5;color:var(--sub)}
+.nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}
+.nav button{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:99px;padding:7px 16px;cursor:pointer;color:var(--sub);font-weight:600}
+.nav button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+.card h2{font-size:16px;margin:0 0 10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+label.f{display:block;font-size:12px;color:var(--sub);margin-bottom:2px}
+input[type=text],input[type=password],input[type=number],input[type=url],input[type=datetime-local],select,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:#fff;color:var(--ink)}
+textarea{min-height:90px;resize:vertical}
+.btn{border:0;background:var(--acc);color:#fff;border-radius:9px;padding:9px 14px;font-weight:600;cursor:pointer}
+.btn.sec{background:#eceff5;color:var(--ink)}
+.btn.bad{background:#fdeaea;color:var(--bad)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.muted{color:var(--sub);font-size:13px}
+.banner{background:#fff6e0;color:var(--warn);border:1px solid #f1dfae;border-radius:10px;padding:8px 12px;font-size:13px;margin:8px 0}
+.banner.bad{background:#fdeaea;color:var(--bad);border-color:#f3c4c4}
+.item{display:flex;gap:12px;align-items:center}
+.item img{width:72px;height:72px;object-fit:cover;border-radius:10px;background:#eceff5;flex:none}
+.item .info{flex:1;min-width:0}
+.item .info b{font-size:16px}
+.item.sel{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc2)}
+.tag{display:inline-block;background:#eceff5;color:var(--sub);border-radius:6px;padding:0 7px;font-size:12px;margin-left:6px}
+.step{display:flex;align-items:center;gap:8px;flex:none}
+.step button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:18px;cursor:pointer}
+.step button:disabled{opacity:.35}
+.step span{min-width:22px;text-align:center;font-weight:700;font-size:17px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 14px;z-index:5}
+.bar .in{max-width:860px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.bar .tot{font-size:18px;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{color:var(--sub);font-size:12px;font-weight:600}
+.scroll{overflow-x:auto}
+.login{max-width:380px;margin:8vh auto 0}
+.login h1{text-align:center;margin:0 0 4px}
+.login .sub{text-align:center;color:var(--sub);margin-bottom:14px}
+.pagehead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.overlay{position:fixed;inset:0;background:rgba(20,25,40,.5);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+.modal{background:#fff;border-radius:14px;padding:18px;max-width:440px;width:100%;max-height:85vh;overflow:auto}
+.modal h3{margin:0 0 8px}
+.no{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;border-radius:7px;background:#eceff5;color:var(--sub);font-size:12px;font-weight:700;flex:none;padding:0 5px}
+.no.sm{height:20px;min-width:20px;font-size:11px;margin-right:6px}
+input.pick{width:22px;height:22px;flex:none;accent-color:var(--acc);cursor:pointer;margin:0}
+input.pick[type=checkbox]{border-radius:50%}
+.livebox{background:#f7f8fb;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:10px}
+.lrow{display:grid;grid-template-columns:minmax(80px,1.4fr) 2fr minmax(70px,.9fr);gap:8px;align-items:center;padding:4px 0;font-size:14px}
+.lname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbar{height:10px;border-radius:99px;background:#e3e7ef;overflow:hidden}
+.lbar i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width .3s}
+.lnum{text-align:right;color:var(--sub);font-size:13px}
+.ord.done{background:#f1faf5;border-color:#bfe6cf}
+.ord .nm{font-size:16px;font-weight:700}
+.payer{border:1px solid var(--line);background:#fff;border-radius:99px;padding:5px 12px;cursor:pointer;font-weight:600;color:var(--sub)}
+.payer.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.bigsum{font-size:20px;font-weight:800}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1d2433;color:#fff;border-radius:99px;padding:8px 16px;font-size:14px;z-index:30;opacity:0;transition:.25s;pointer-events:none}
+.toast.on{opacity:.95}
+canvas#rc{width:100%;max-width:420px;border:1px solid var(--line);border-radius:10px;margin-top:8px}
+pre.txt{background:#f7f8fb;border:1px solid var(--line);border-radius:10px;padding:10px;white-space:pre-wrap;font:13px/1.55 inherit;margin:8px 0 0}
+
+/* ===== v1.23 모바일 최적화 ===== */
+html{-webkit-text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
+button,input,select,textarea,label,a{touch-action:manipulation}
+input[type=text],input[type=password],input[type=number],input[type=url],input[type=datetime-local],select,textarea{font-size:16px;min-height:44px}
+textarea{min-height:90px}
+.btn{min-height:44px}
+.btn.sm{min-height:38px;padding:6px 12px}
+.nav{position:sticky;top:0;z-index:6;background:var(--bg);margin:0 -12px;padding:6px 12px;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav button{min-height:40px}
+.pagehead{flex-wrap:wrap}
+.wrap{padding-bottom:calc(120px + env(safe-area-inset-bottom));padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+.bar{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+.toast{bottom:calc(96px + env(safe-area-inset-bottom));max-width:90vw;text-align:center}
+.step button{width:42px;height:42px}
+input.pick{width:26px;height:26px}
+input.pick[type=checkbox]{-webkit-appearance:none;appearance:none;border:2px solid #aab2c3;border-radius:50%;background:#fff;position:relative}
+input.pick[type=checkbox]:checked{background:var(--acc);border-color:var(--acc)}
+input.pick[type=checkbox]:checked::after{content:"";position:absolute;left:7px;top:2px;width:7px;height:12px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg)}
+.payer{min-height:40px}
+.urow{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}
+.urow .un{font-weight:700;font-size:16px}
+.urow select{width:auto}
+td.nw{white-space:nowrap}
+@media (max-width:520px){
+  .wrap{padding-top:6px}
+  header.top h1{font-size:18px}
+  .card{padding:12px}
+  .item{flex-wrap:wrap;gap:8px 10px}
+  .item .info{flex:1 1 120px}
+  .item img{width:56px;height:56px}
+  .item .step{width:100%;justify-content:flex-end}
+  .bar .tot{font-size:16px}
+  .bar .btn{padding:10px 14px}
+  .login{margin-top:4vh}
+  .overlay{align-items:flex-end;padding:0}
+  .modal{border-radius:16px 16px 0 0;max-width:none;max-height:90vh;padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+  table{font-size:13px}
+  .grid{grid-template-columns:1fr 1fr}
+  .lrow{grid-template-columns:1fr auto}
+  .lrow .lbar{grid-column:1/3;order:3}
+}
+
+/* ===== v1.25 등록 화면 ===== */
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input::placeholder,textarea::placeholder{color:#a8b0c0}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc2)}
+.fold .fh{display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;min-height:32px;-webkit-user-select:none;user-select:none}
+.fold .fh h2{margin:0}
+.chev{color:var(--sub);transition:transform .2s;font-size:14px}
+.fold.closed .chev{transform:rotate(-90deg)}
+.fold.closed .fb{display:none}
+.ff{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px}
+.ff .full{grid-column:1/-1}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fld>label{font-size:13px;font-weight:700;color:var(--ink)}
+.fld>label small{font-weight:400;color:var(--sub);margin-left:4px}
+.fld input{border:1.5px solid var(--line);border-radius:12px;background:#fbfcfe;padding:11px 13px}
+.fld input:focus{background:#fff}
+.sfx{position:relative}
+.sfx input{padding-right:36px;text-align:right}
+.sfx span{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:var(--sub);pointer-events:none}
+.thumb{width:46px;height:46px;border-radius:10px;object-fit:cover;background:#eceff5;flex:none;display:none}
+.tchips{display:flex;gap:6px;flex-wrap:wrap}
+.tchip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:4px 11px;font-size:13px;color:var(--sub);cursor:pointer;min-height:30px}
+.tchip:active{background:var(--acc2);color:var(--acc)}
+.foldbar{display:flex;gap:8px;justify-content:flex-end;margin:6px 0 0}
+@media (max-width:520px){.ff{grid-template-columns:1fr 1fr}.ff .m1{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* ===== 기본 설정 ===== */
+const VERSION = 'v1.26';
+// Google Apps Script 웹앱 주소(.../exec). 배포할 때 여기에 넣어 두면 모든 사용자가 자동으로 같은 서버를 씁니다.
+const DEFAULT_API_URL = '';
+
+let liveOpen = false, liveData = null, orderPick = false, orderSel = new Set(), order = null, orderVoters = [], saveTimer = null;
+let API = (localStorage.getItem('vw_api') || DEFAULT_API_URL).trim();
+let cfg = { title: 'Snack Poll', mode: 'list' }, menus = [], myVote = null, me = null;
+let votes = [], resUsers = [], userList = [];
+let page = 'vote', draft = {}, draftReady = false, editId = null, pollTimer = null, tickTimer = null, lastSig = '';
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const won = n => Number(n || 0).toLocaleString('ko-KR') + '원';
+const fmtT = t => { const d = new Date(t), p = x => String(x).padStart(2, '0'); return `${String(d.getFullYear()).slice(2)}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+const toLocalInput = iso => { if (!iso) return ''; const d = new Date(iso); if (isNaN(d)) return ''; const p = x => String(x).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2200); }
+
+/* ===== 서버 호출 (Apps Script 웹앱) ===== */
+async function api(action, data = {}) {
+  if (!API) throw new Error('서버 주소가 설정되지 않았습니다');
+  const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, token: localStorage.getItem('vw_tok') || '', ...data }) });
+  if (!r.ok) throw new Error('서버 응답 오류 ' + r.status);
+  return r.json();
+}
+// 오류면 예외, 로그인 만료면 로그인 화면으로
+async function call(action, data) {
+  const j = await api(action, data);
+  if (j.auth) { localStorage.removeItem('vw_tok'); me = null; stopTimers(); renderLogin(j.err); throw new Error(j.err); }
+  if (j.err) throw new Error(j.err);
+  return j;
+}
+function stopTimers() { clearInterval(pollTimer); clearInterval(tickTimer); }
+
+/* ===== 상태 ===== */
+async function loadState() {
+  const j = await call('state');
+  me = j.me; cfg = j.cfg; menus = j.menus; myVote = j.myVote;
+  document.title = `${cfg.title} ${VERSION}`;
+}
+const sig = () => JSON.stringify([cfg, menus]);
+const isOpen = () => { if (cfg.closed) return false; if (cfg.deadline && Date.now() > new Date(cfg.deadline).getTime()) return false; return true; };
+const can = f => !!(me && me.can && me.can[f]);
+const canSettings = () => can('settings') || can('users') || can('logs') || me.role === 'admin';
+
+/* ===== 시작 / 로그인 ===== */
+async function init() {
+  if (!API) return renderLogin();
+  try {
+    const p = await api('pub'); cfg.title = p.title || 'Snack Poll'; cfg.mode = p.mode || 'list'; document.title = `${cfg.title} ${VERSION}`;
+    if (localStorage.getItem('vw_tok')) { try { await loadState(); if (me) return enter(true); } catch (e) { if (!$('.login')) renderLogin('연결 오류: ' + e.message); return; } }
+  } catch (e) { return renderLogin('서버 연결 오류: ' + e.message); }
+  if (!$('.login')) renderLogin();
+}
+function renderLogin(err) {
+  stopTimers();
+  const setup = !API;
+  $('#app').innerHTML = `
+  <div class="login">
+    <h1>${esc(cfg.title || 'Snack Poll')} <small class="muted">${VERSION}</small></h1>
+    <div class="card">
+      ${err ? `<div class="banner bad">${esc(err)}</div>` : ''}
+      ${setup ? `<div class="banner">서버 주소가 아직 설정되지 않았습니다. 관리자는 Apps Script 웹앱 주소를 입력해 주세요.</div>
+        <label class="f">서버 주소 (…/exec)</label><input type="url" id="lg-api" placeholder="https://script.google.com/macros/s/…/exec">
+        <div class="row" style="margin-top:8px"><button class="btn sm" onclick="saveApi('#lg-api')">저장</button></div>`
+      : `${cfg.mode === 'code' ? `<label class="f">입장 코드 (새 이름으로 처음 입장할 때만)</label><input type="text" id="lg-code" autocomplete="off"><div style="height:8px"></div>` : ''}
+      <label class="f">이름</label><input type="text" id="lg-name" autocomplete="username" maxlength="20">
+      <div style="height:8px"></div>
+      <label class="f">비밀번호 (숫자 4자리)</label><input type="password" id="lg-pw" inputmode="numeric" maxlength="4" autocomplete="current-password">
+      <div style="height:12px"></div>
+      <button class="btn" style="width:100%" id="lg-go" onclick="doLogin()">입장</button>
+      <p class="muted" style="margin:10px 0 0">${cfg.mode === 'code' ? '처음 쓰는 이름이면 계정이 새로 만들어지고, 다음부터는 같은 이름·비밀번호로 입장합니다.' : '관리자가 등록한 이름으로 입장합니다. 처음 입장할 때 입력한 비밀번호가 내 비밀번호가 됩니다.'}</p>`}
+    </div>
+  </div>`;
+  if (!setup) ['#lg-name', '#lg-pw'].forEach(s => $(s).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
+}
+function saveApi(sel) {
+  const v = $(sel).value.trim();
+  if (v && !/^https:\/\/script\.google\.com\/.+\/exec/.test(v)) return toast('Apps Script 웹앱 주소(…/exec)를 입력하세요');
+  if (v) localStorage.setItem('vw_api', v); else localStorage.removeItem('vw_api');
+  toast('저장했습니다. 새로고침합니다'); setTimeout(() => location.reload(), 600);
+}
+async function doLogin(confirmed) {
+  const name = $('#lg-name').value.trim(), pw = $('#lg-pw').value.trim(), code = $('#lg-code') ? $('#lg-code').value.trim() : '';
+  if (!name) return toast('이름을 입력하세요');
+  if (!/^\d{4}$/.test(pw)) return toast('비밀번호는 숫자 4자리입니다');
+  const btn = $('#lg-go'); btn.disabled = true; btn.textContent = '확인 중…';
+  try {
+    const j = await api('login', { name, pw, code, confirm: confirmed === true });
+    if (j.need === 'setpw') { btn.disabled = false; btn.textContent = '입장'; if (confirm(`"${j.name}" 님은 처음 입장입니다.\n방금 입력한 4자리를 내 비밀번호로 설정할까요?`)) return doLogin(true); return; }
+    if (j.need === 'create') { btn.disabled = false; btn.textContent = '입장'; if (confirm(`"${j.name}" 은(는) 새 이름입니다.\n이 이름과 비밀번호로 계정을 만들까요?`)) return doLogin(true); return; }
+    if (j.err) return renderLogin(j.err);
+    localStorage.setItem('vw_tok', j.token);
+    if (j.mustChange) return forceChange();
+    await loadState(); enter();
+  } catch (e) { renderLogin('오류: ' + e.message); }
+}
+function forceChange() {
+  openModal(`<h3>비밀번호 변경</h3><p class="muted">초기 비밀번호입니다. 새 비밀번호 4자리를 정해 주세요.</p>
+    <input type="password" id="np1" inputmode="numeric" maxlength="4" placeholder="새 비밀번호 4자리">
+    <div style="height:8px"></div><input type="password" id="np2" inputmode="numeric" maxlength="4" placeholder="한 번 더 입력">
+    <div class="row" style="margin-top:12px"><button class="btn" id="npok">변경하고 입장</button></div>`, true);
+  $('#npok').onclick = async () => {
+    const a = $('#np1').value, b = $('#np2').value;
+    if (!/^\d{4}$/.test(a)) return toast('숫자 4자리로 입력하세요');
+    if (a !== b) return toast('두 번 입력한 값이 다릅니다');
+    const j = await api('changePw', { pw: a });
+    if (j.err) return toast(j.err);
+    closeModal(); await loadState(); enter();
+  };
+}
+async function logout() {
+  try { await api('logout'); } catch (e) {}
+  localStorage.removeItem('vw_tok'); me = null; draftReady = false; stopTimers(); renderLogin();
+}
+
+/* ===== 앱 셸 ===== */
+function enter(silent) {
+  page = 'vote'; draftReady = false; lastSig = sig(); shell(); stopTimers();
+  pollTimer = setInterval(poll, 15000); tickTimer = setInterval(tick, 1000);
+}
+function shell() {
+  const roleName = { admin: '관리자', manager: '매니저', user: '참여자' }[me.role];
+  const tabs = [['vote', '투표']];
+  if (can('menu')) tabs.push(['menu', '등록']);
+  if (can('results')) tabs.push(['results', '결과 보기']);
+  if (can('order')) tabs.push(['order', '주문']);
+  if (canSettings()) tabs.push(['settings', '설정']);
+  if (!tabs.find(t => t[0] === page)) page = 'vote';
+  $('#app').innerHTML = `
+  <header class="top"><h1>${esc(cfg.title)}<small>${VERSION}</small></h1>
+    <div class="row"><span class="chip">${esc(me.name)} · ${roleName}</span><button class="btn sec sm" onclick="logout()">로그아웃</button></div></header>
+  <div class="nav">${tabs.map(t => `<button class="${page === t[0] ? 'on' : ''}" onclick="go('${t[0]}')">${t[1]}</button>`).join('')}</div>
+  <div id="main"></div>`;
+  renderPage();
+}
+async function go(p) {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; try { await saveOrder(); } catch (e) {} }
+  page = p; if (p === 'vote') draftReady = false; try { await loadState(); } catch (e) { return; } shell();
+}
+function renderPage() {
+  if (page === 'vote') renderVote();
+  else if (page === 'menu') renderMenu();
+  else if (page === 'results') renderResults();
+  else if (page === 'order') renderOrder();
+  else if (page === 'settings') renderSettings();
+}
+async function poll() {
+  if (!me) return;
+  try {
+    if (page === 'vote') { const prev = sig(); const j = await call('state'); cfg = j.cfg; menus = j.menus; myVote = j.myVote; if (sig() !== prev) renderVote(); else if (liveOpen) refreshLive(); }
+    else if (page === 'results') { await loadResults(); drawResults(); }
+  } catch (e) {}
+}
+function tick() {
+  const el = $('#dl'); if (!el) return;
+  if (cfg.closed) { el.textContent = '투표가 마감되었습니다'; return; }
+  if (!cfg.deadline) { el.textContent = '마감 시간 없음'; return; }
+  const ms = new Date(cfg.deadline).getTime() - Date.now();
+  if (ms <= 0) { el.textContent = '투표가 마감되었습니다'; if (page === 'vote' && !$('.bar button.btn:disabled')) renderVote(); return; }
+  const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+  el.textContent = `마감까지 ${d ? d + '일 ' : ''}${h}시간 ${m}분 ${s % 60}초`;
+}
+
+/* ===== 투표 ===== */
+function renderVote() {
+  const open = isOpen(), mine = myVote;
+  if (!draftReady) { draft = { ...((mine && mine.items) || {}) }; draftReady = true; }
+  if (!mine) liveOpen = false;
+  const kind = cfg.multi ? 'checkbox' : 'radio';
+  const cards = menus.map((m, i) => `
+    <div class="card item" id="c-${m.id}">
+      <input type="${kind}" class="pick" id="p-${m.id}" name="vpick" ${open ? '' : 'disabled'} onclick="pickItem('${m.id}')">
+      <span class="no">${i + 1}</span>
+      ${m.image ? `<img src="${esc(m.image)}" alt="" onerror="this.style.display='none'">` : ''}
+      <div class="info" onclick="pickItem('${m.id}')" style="cursor:pointer"><b>${esc(m.name)}</b>${m.type ? `<span class="tag">${esc(m.type)}</span>` : ''}
+        <div class="muted">${[m.unit, (cfg.showPrice !== false && m.price) ? won(m.price) : ''].filter(Boolean).map(esc).join(' · ')}${m.link ? ` · <a href="${esc(m.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">링크</a>` : ''}</div></div>
+      ${cfg.showQty !== false ? `<div class="step" id="s-${m.id}"><button onclick="setQty('${m.id}',-1)" ${open ? '' : 'disabled'}>−</button><span id="q-${m.id}">0</span><button onclick="setQty('${m.id}',1)" ${open ? '' : 'disabled'}>＋</button></div>` : ''}
+    </div>`).join('');
+  $('#main').innerHTML = `
+    <div class="card"><div class="row" style="justify-content:space-between"><b id="dl"></b>
+      <span class="chip ${mine ? '' : 'gray'}">${mine ? '투표 완료 · 수정 가능' : '아직 투표 전'}</span></div>
+      <div class="muted" style="margin-top:4px">${cfg.multi ? '여러 제품을 함께 고를 수 있어요.' : '한 가지 제품을 고르세요.'}${cfg.showQty !== false ? ' 고른 제품의 수량을 조절할 수 있어요.' : ''}</div>
+      ${mine ? `<div class="row" style="margin-top:8px"><button class="btn sec sm" id="live-btn" onclick="toggleLive()">${liveOpen ? '현황 닫기' : '결과 보기'}</button></div>` : ''}
+      <div id="live"></div></div>
+    ${menus.length ? cards : '<div class="card muted">등록된 메뉴가 없습니다.</div>'}
+    <div class="bar"><div class="in">${cfg.showTotal !== false ? '<div><div class="muted" id="vlab">내 선택 합계</div><div class="tot" id="vtot">0원</div></div>' : '<div></div>'}
+      <div class="row"><button class="btn sec" onclick="resetDraft()" ${open ? '' : 'disabled'}>비우기</button><button class="btn" id="vgo" onclick="submitVote()" ${open ? '' : 'disabled'}>${mine ? '투표 수정' : '투표하기'}</button></div></div></div>`;
+  refreshVote(); tick();
+  if (liveOpen) refreshLive(); else drawLive();
+}
+function refreshVote() {
+  let tot = 0, cnt = 0;
+  menus.forEach(m => {
+    const q = draft[m.id] || 0; tot += q * (m.price || 0); cnt += q;
+    const e = $('#q-' + m.id); if (e) e.textContent = q;
+    const c = $('#c-' + m.id); if (c) c.classList.toggle('sel', q > 0);
+    const p = $('#p-' + m.id); if (p) p.checked = q > 0;
+    const st = $('#s-' + m.id); if (st) st.style.display = q > 0 ? 'flex' : 'none';
+  });
+  const sp = cfg.showPrice !== false, sq = cfg.showQty !== false, kinds = Object.keys(draft).length;
+  const t = $('#vtot'), lab = $('#vlab');
+  if (lab) lab.textContent = sp ? '내 선택 합계' : '내 선택';
+  if (t) t.textContent = sp ? (sq ? `${won(tot)} (${cnt}개)` : won(tot)) : `${kinds}개 제품`;
+}
+function pickItem(id) {
+  if (!isOpen()) return refreshVote();
+  const q = draft[id] || 0;
+  if (cfg.multi) { if (q > 0) delete draft[id]; else draft[id] = 1; }
+  else draft = { [id]: q || 1 };
+  refreshVote();
+}
+function setQty(id, d) {
+  if (!isOpen()) return;
+  const q = Math.max(0, Math.min(99, (draft[id] || 0) + d));
+  if (!cfg.multi && q > 0) draft = {};
+  if (q > 0) draft[id] = q; else delete draft[id];
+  refreshVote();
+}
+async function toggleLive() { liveOpen = !liveOpen; if (liveOpen) await refreshLive(); else drawLive(); }
+async function refreshLive() {
+  try { liveData = await call('live'); } catch (e) { liveOpen = false; toast(e.message); }
+  drawLive();
+}
+function drawLive() {
+  const el = $('#live'); if (!el) return;
+  const b = $('#live-btn'); if (b) b.textContent = liveOpen ? '현황 닫기' : '결과 보기';
+  if (!liveOpen || !liveData) { el.innerHTML = ''; return; }
+  const per = liveData.per || {}, key = cfg.showQty !== false ? 'qty' : 'voters', mx = Math.max(1, ...menus.map(m => (per[m.id] || {})[key] || 0)), mineIt = (myVote && myVote.items) || {};
+  el.innerHTML = `<div class="livebox"><div class="muted" style="margin-bottom:6px">실시간 현황 · 투표 ${liveData.voted}명 / 등록 ${liveData.registered}명 (15초마다 갱신)</div>
+    ${menus.map((m, i) => { const p = per[m.id] || { qty: 0, voters: 0 }; return `<div class="lrow"><div class="lname"><span class="no sm">${i + 1}</span>${esc(m.name)}${mineIt[m.id] ? '<span class="tag">내 선택</span>' : ''}</div><div class="lbar"><i style="width:${(p[key] || 0) / mx * 100}%"></i></div><div class="lnum">${cfg.showQty !== false ? p.qty + '개 · ' : ''}${p.voters}명</div></div>`; }).join('') || '<div class="muted">제품이 없습니다.</div>'}</div>`;
+}
+function resetDraft() { draft = {}; refreshVote(); }
+async function submitVote() {
+  if (!isOpen()) return toast('마감되었습니다');
+  const items = {}; menus.forEach(m => { if (draft[m.id] > 0) items[m.id] = draft[m.id]; });
+  if (!Object.keys(items).length) {
+    if (!myVote) return toast('선택한 제품이 없습니다');
+    if (!confirm('선택이 비어 있습니다. 내 투표를 취소할까요?')) return;
+  }
+  const b = $('#vgo'); b.disabled = true;
+  try { const j = await call('saveVote', { items }); myVote = j.myVote; toast(myVote ? '투표했습니다' : '투표를 취소했습니다'); draftReady = false; renderVote(); }
+  catch (e) { toast(e.message); b.disabled = false; }
+}
+
+/* ===== 메뉴 등록 ===== */
+let menuFold = (() => { try { return JSON.parse(localStorage.getItem('sp_fold')) || {}; } catch (e) { return {}; } })();
+const FOLD_KEYS = ['opts', 'item', 'blink', 'bname', 'list'];
+function saveFold() { try { localStorage.setItem('sp_fold', JSON.stringify(menuFold)); } catch (e) {} }
+function foldCard(k, title, body) {
+  return `<div class="card fold ${menuFold[k] ? 'closed' : ''}" id="fc-${k}"><div class="fh" onclick="foldToggle('${k}')"><h2>${title}</h2><span class="chev">▾</span></div><div class="fb" style="margin-top:10px">${body}</div></div>`;
+}
+function foldToggle(k) { menuFold[k] = !menuFold[k]; saveFold(); const c = $('#fc-' + k); if (c) c.classList.toggle('closed', !!menuFold[k]); }
+function foldAll(closed) { FOLD_KEYS.forEach(k => menuFold[k] = closed); saveFold(); renderMenu(); }
+function knownTypes() {
+  const cnt = {}; menus.forEach(m => { if (m.type) cnt[m.type] = (cnt[m.type] || 0) + 1; });
+  let loc = []; try { loc = JSON.parse(localStorage.getItem('sp_types')) || []; } catch (e) {}
+  loc.forEach(t => { if (!(t in cnt)) cnt[t] = 0; });
+  return Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]);
+}
+function rememberType(t) {
+  if (!t) return; let loc = []; try { loc = JSON.parse(localStorage.getItem('sp_types')) || []; } catch (e) {}
+  loc = [t, ...loc.filter(x => x !== t)].slice(0, 30); try { localStorage.setItem('sp_types', JSON.stringify(loc)); } catch (e) {}
+}
+function setType(t) { const e = $('#f-type'); if (e) { e.value = t; e.focus(); } }
+function setThumb() { const u = $('#f-img').value.trim(), el = $('#f-thumb'); if (!el) return; if (u) { el.src = u; el.style.display = 'block'; } else el.style.display = 'none'; }
+function renderMenu() {
+  const e = editId ? menus.find(m => m.id === editId) : null;
+  if (e) menuFold.item = false;
+  const types = knownTypes();
+  const optsBody = `
+    <div class="grid"><div><label class="f">복수 선택</label><select id="o-multi"><option value="0" ${cfg.multi ? '' : 'selected'}>한 가지만 선택</option><option value="1" ${cfg.multi ? 'selected' : ''}>여러 제품 선택 가능</option></select></div>
+      <div><label class="f">투표 마감 시간</label><input type="datetime-local" id="o-dl" value="${esc(toLocalInput(cfg.deadline))}"></div>
+      <div><label class="f">수동 마감</label><select id="o-closed"><option value="0" ${cfg.closed ? '' : 'selected'}>투표 진행 중</option><option value="1" ${cfg.closed ? 'selected' : ''}>지금 마감</option></select></div></div>
+    <div class="row" style="margin-top:10px"><button class="btn" onclick="saveOpts()">옵션 저장</button><button class="btn sec" onclick="document.getElementById('o-dl').value=''">마감 시간 지우기</button></div>`;
+  const itemBody = `
+    <div class="ff">
+      <div class="fld full"><label>제품 이름 <small>필수</small></label><input type="text" id="f-name" value="${esc(e ? e.name : '')}" placeholder="예: 아메리카노" autocomplete="off"></div>
+      <div class="fld full"><label>종류 <small>입력한 종류는 기억해서 목록에 보여줘요</small></label>
+        <input type="text" id="f-type" list="dl-types" value="${esc(e ? e.type : '')}" placeholder="예: 커피" autocomplete="off">
+        <datalist id="dl-types">${types.map(t => `<option value="${esc(t)}">`).join('')}</datalist>
+        ${types.length ? `<div class="tchips">${types.slice(0, 10).map(t => `<button type="button" class="tchip" data-t="${esc(t)}" onclick="setType(this.dataset.t)">${esc(t)}</button>`).join('')}</div>` : ''}</div>
+      <div class="fld"><label>포장 단위</label><input type="text" id="f-unit" value="${esc(e ? e.unit : '')}" placeholder="예: 1박스(10개입)" autocomplete="off"></div>
+      <div class="fld"><label>가격</label><div class="sfx"><input type="number" id="f-price" min="0" inputmode="numeric" value="${e ? e.price || '' : ''}" placeholder="0"><span>원</span></div></div>
+      <div class="fld full"><label>제품 사진 주소</label><div class="row" style="flex-wrap:nowrap;gap:10px"><input type="url" id="f-img" value="${esc(e ? e.image : '')}" placeholder="https://… (링크에서 가져오거나 직접 입력)" oninput="setThumb()"><img id="f-thumb" class="thumb" alt="" onerror="this.style.display='none'"></div></div>
+      <div class="fld full"><label>링크 <small>선택</small></label>
+        <div class="row" style="flex-wrap:nowrap;gap:8px"><input type="url" id="f-link" value="${esc(e ? e.link : '')}" placeholder="https://…"><button class="btn sec" type="button" style="white-space:nowrap" onclick="fillFromLink()">가져오기</button></div>
+        <div id="f-msg" class="muted">링크를 넣고 "가져오기"를 누르면 이름·사진·가격을 채워 줘요. 사이트에 따라 안 될 수 있어요.</div></div>
+    </div>
+    <div class="row" style="margin-top:16px"><button class="btn" onclick="saveItem()">${e ? '수정 저장' : '등록'}</button>${e ? '<button class="btn sec" onclick="editId=null;renderMenu()">취소</button>' : ''}</div>`;
+  const blinkBody = `
+    <textarea id="b-list" placeholder="한 줄에 링크 하나씩 붙여넣기&#10;(링크 앞뒤에 제품 이름을 적으면 이름으로 사용)"></textarea>
+    <div class="row" style="margin-top:8px"><button class="btn" onclick="bulkAdd()">일괄 등록</button><span class="muted" id="b-msg"></span></div>`;
+  const bnameBody = `
+    <textarea id="n-list" placeholder="한 줄에 제품 하나씩 입력&#10;아메리카노&#10;카페라떼, 4500&#10;생수, 음료, 500ml 20병, 9900"></textarea>
+    <div class="muted" style="margin-top:4px">형식: 이름 / 이름, 가격 / 이름, 종류, 포장단위, 가격 (쉼표 또는 탭으로 구분). 두 칸일 때 뒤가 숫자면 가격, 아니면 종류입니다. 같은 이름이 이미 있으면 건너뜁니다. 링크·사진은 나중에 수정에서 넣을 수 있어요.</div>
+    <div class="row" style="margin-top:8px"><button class="btn" onclick="bulkNames()">이름으로 일괄 등록</button><span class="muted" id="n-msg"></span></div>`;
+  const listBody = `
+    <div class="row" style="margin-bottom:8px"><button class="btn sec sm" onclick="exportMenus()">내보내기(CSV)</button><button class="btn sec sm" onclick="document.getElementById('imp-file').click()">불러오기</button>${menus.length ? '<button class="btn bad sm" onclick="delAllMenus()">전체 삭제</button>' : ''}</div>
+    <input type="file" id="imp-file" accept=".csv,.tsv,.txt" style="display:none" onchange="onImportFile(this)">
+    <div class="muted" style="margin-bottom:6px">열: 제품이름, 종류, 포장단위, 가격, 링크, 사진주소 (제품이 없을 때 내보내면 빈 양식이 받아집니다)</div>
+    ${menus.length ? `<div class="scroll"><table><tr><th>번호</th><th></th><th>이름</th><th>종류</th><th>포장</th><th>가격</th><th></th></tr>${menus.map((m, i) => `
+      <tr><td><span class="no">${i + 1}</span></td><td>${m.image ? `<img src="${esc(m.image)}" width="40" height="40" style="object-fit:cover;border-radius:6px" onerror="this.style.display='none'">` : ''}</td><td>${esc(m.name)}</td><td>${esc(m.type)}</td><td>${esc(m.unit)}</td><td>${m.price ? won(m.price) : ''}</td>
+      <td style="white-space:nowrap"><button class="btn sec sm" onclick="editId='${m.id}';renderMenu();window.scrollTo(0,0)">수정</button> <button class="btn bad sm" onclick="delMenu('${m.id}')">삭제</button></td></tr>`).join('')}</table></div>` : '<div class="muted">아직 없습니다.</div>'}`;
+  $('#main').innerHTML = `
+    <div class="foldbar"><button class="btn sec sm" onclick="foldAll(false)">모두 펼치기</button><button class="btn sec sm" onclick="foldAll(true)">모두 접기</button></div>
+    ${foldCard('opts', '투표 옵션', optsBody)}
+    ${foldCard('item', e ? '제품 수정' : '제품 등록', itemBody)}
+    ${foldCard('blink', '링크 리스트로 일괄 등록', blinkBody)}
+    ${foldCard('bname', '제품 이름으로 일괄 등록', bnameBody)}
+    ${foldCard('list', `등록된 제품 (${menus.length})`, listBody)}`;
+  setThumb();
+}
+async function saveOpts() {
+  try {
+    const dl = $('#o-dl').value;
+    await call('optsSave', { multi: $('#o-multi').value === '1', deadline: dl, closed: $('#o-closed').value === '1' });
+    await loadState(); toast('저장했습니다');
+  } catch (e) { toast(e.message); }
+}
+async function fillFromLink() {
+  const url = $('#f-link').value.trim(); if (!/^https?:\/\//.test(url)) return toast('링크를 먼저 입력하세요');
+  $('#f-msg').textContent = '가져오는 중…';
+  try {
+    const m = (await call('meta', { url })).meta;
+    if (!m.title && !m.image) { $('#f-msg').textContent = '가져오지 못했습니다. 이름·사진 주소를 직접 입력해 주세요.'; return; }
+    if (m.title && !$('#f-name').value) $('#f-name').value = m.title;
+    if (m.image) $('#f-img').value = m.image;
+    if (m.price && !$('#f-price').value) $('#f-price').value = m.price;
+    $('#f-msg').textContent = '가져왔습니다. 내용을 확인하고 등록하세요.';
+  } catch (e) { $('#f-msg').textContent = e.message; }
+}
+async function saveItem() {
+  const item = { id: editId || '', name: $('#f-name').value.trim(), type: $('#f-type').value.trim(), unit: $('#f-unit').value.trim(), price: parseInt($('#f-price').value) || 0, link: $('#f-link').value.trim(), image: $('#f-img').value.trim() };
+  if (!item.name) return toast('제품 이름을 입력하세요');
+  try { await call('menuSave', { item }); rememberType(item.type); editId = null; await loadState(); toast('저장했습니다'); renderMenu(); } catch (e) { toast(e.message); }
+}
+async function bulkAdd() {
+  const lines = $('#b-list').value.split('\n').map(s => s.trim()).filter(Boolean);
+  if (!lines.length) return toast('링크를 붙여넣으세요');
+  let ok = 0, fail = 0;
+  for (let i = 0; i < lines.length; i++) {
+    $('#b-msg').textContent = `처리 중 ${i + 1}/${lines.length}`;
+    const mm = lines[i].match(/https?:\/\/\S+/); if (!mm) { fail++; continue; }
+    try { await call('menuFromLink', { url: mm[0], hint: lines[i].replace(mm[0], '').trim() }); ok++; } catch (e) { fail++; }
+  }
+  await loadState(); toast(`등록 ${ok}건${fail ? ', 실패 ' + fail + '건' : ''}`); renderMenu();
+}
+async function delMenu(id) {
+  const m = menus.find(x => x.id === id); if (!confirm(`"${m.name}" 을(를) 삭제할까요?`)) return;
+  try { await call('menuDelete', { id }); await loadState(); renderMenu(); } catch (e) { toast(e.message); }
+}
+async function delAllMenus() {
+  if (!confirm('등록된 제품을 모두 삭제할까요? 되돌릴 수 없습니다.')) return;
+  try { await call('menuClear'); await loadState(); renderMenu(); } catch (e) { toast(e.message); }
+}
+
+/* ===== 결과 ===== */
+async function loadResults() { const j = await call('results'); votes = j.votes; resUsers = j.users; }
+function calc() {
+  const per = {}; menus.forEach(m => per[m.id] = { m, qty: 0, voters: 0 });
+  const people = [];
+  votes.forEach(v => {
+    let cnt = 0, sum = 0; const parts = [];
+    Object.entries(v.items || {}).forEach(([id, q]) => { const p = per[id]; if (!p || q <= 0) return; p.qty += q; p.voters++; cnt += q; sum += q * (p.m.price || 0); parts.push(`${p.m.name}×${q}`); });
+    if (cnt) people.push({ name: v.name, parts, cnt, sum });
+  });
+  const rows = Object.values(per).filter(p => p.qty > 0).sort((a, b) => b.qty - a.qty);
+  const voted = new Set(votes.map(v => v.key));
+  const non = resUsers.filter(u => !voted.has(u.key) && u.key !== 'admin').map(u => u.name);
+  return { rows, people, totalQty: rows.reduce((s, r) => s + r.qty, 0), totalPrice: rows.reduce((s, r) => s + r.qty * (r.m.price || 0), 0), non };
+}
+function resultText() {
+  const r = calc(), L = [];
+  L.push(`[${cfg.title}] 투표 결과 (${fmtT(Date.now())})`, `참여 ${r.people.length}명`, '');
+  L.push('■ 제품별');
+  r.rows.forEach(p => L.push(`- ${p.m.name}${p.m.unit ? ' (' + p.m.unit + ')' : ''} ${p.qty}개 / ${p.voters}명${p.m.price ? ' = ' + won(p.qty * p.m.price) : ''}`));
+  if (!r.rows.length) L.push('- (투표 없음)');
+  L.push('', `■ 합계: ${r.totalQty}개 / ${won(r.totalPrice)}`, '', '■ 참여자별');
+  r.people.forEach(p => L.push(`- ${p.name}: ${p.parts.join(', ')}${p.sum ? ' (' + won(p.sum) + ')' : ''}`));
+  if (r.non.length) L.push('', `■ 미참여: ${r.non.join(', ')}`);
+  return L.join('\n');
+}
+async function renderResults() {
+  if (!$('#main')) return;
+  try { await loadResults(); } catch (e) { return; }
+  drawResults();
+}
+function drawResults() {
+  if (page !== 'results' || !$('#main')) return;
+  const keep = $('#withImg') ? $('#withImg').checked : false;
+  const r = calc(), no = id => menus.findIndex(m => m.id === id) + 1;
+  const allOn = r.rows.length > 0 && r.rows.every(p => orderSel.has(p.m.id));
+  $('#main').innerHTML = `
+  <div class="card"><h2>투표 결과</h2>
+    <div class="row"><span class="chip">참여 ${r.people.length}명</span><span class="chip">총 ${r.totalQty}개</span><span class="chip">${won(r.totalPrice)}</span><span class="chip gray">미참여 ${r.non.length}명</span>
+      <button class="btn sec sm" style="margin-left:auto" onclick="renderResults()">새로고침</button></div></div>
+  <div class="card"><div class="pagehead"><h2>제품별</h2>
+      ${orderPick ? `<div class="row"><button class="btn" onclick="goOrder()">선택 품목 주문하기 (${orderSel.size})</button><button class="btn sec" onclick="cancelPick()">취소</button></div>` : (can('order') ? '<button class="btn" onclick="startPick()">주문하기</button>' : '')}</div>
+    ${orderPick ? '<div class="muted" style="margin-bottom:6px">주문할 품목을 체크한 뒤 "선택 품목 주문하기"를 누르세요.</div>' : ''}
+    ${r.rows.length ? `<div class="scroll"><table><tr>${orderPick ? `<th><input type="checkbox" ${allOn ? 'checked' : ''} onchange="pickAll(this.checked)"></th>` : ''}<th>번호</th><th>제품</th><th>수량</th><th>인원</th><th>금액</th></tr>${r.rows.map(p => `<tr>${orderPick ? `<td><input type="checkbox" ${orderSel.has(p.m.id) ? 'checked' : ''} onchange="pickOne('${p.m.id}',this.checked)"></td>` : ''}<td><span class="no">${no(p.m.id)}</span></td><td>${esc(p.m.name)}<div class="muted">${esc(p.m.unit)}</div></td><td>${p.qty}</td><td>${p.voters}</td><td>${p.m.price ? won(p.qty * p.m.price) : '-'}</td></tr>`).join('')}
+    <tr>${orderPick ? '<th></th>' : ''}<th></th><th>합계</th><th>${r.totalQty}</th><th></th><th>${won(r.totalPrice)}</th></tr></table></div>` : '<div class="muted">아직 투표가 없습니다.</div>'}</div>
+  <div class="card"><h2>참여자별</h2>${r.people.length ? `<div class="scroll"><table><tr><th>이름</th><th>선택</th><th>금액</th></tr>${r.people.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.parts.join(', '))}</td><td>${p.sum ? won(p.sum) : '-'}</td></tr>`).join('')}</table></div>` : '<div class="muted">-</div>'}
+    ${r.non.length ? `<p class="muted">미참여: ${esc(r.non.join(', '))}</p>` : ''}</div>
+  <div class="card"><h2>결과 공유</h2>
+    <div class="row"><button class="btn" onclick="copyText()">텍스트 복사</button>${navigator.share ? '<button class="btn sec" onclick="shareText()">텍스트 공유</button>' : ''}
+      <label class="row" style="gap:4px"><input type="checkbox" id="withImg" ${keep ? 'checked' : ''} onchange="toggleImg()"> 이미지도 만들기</label></div>
+    <div id="imgBox" style="display:none"><canvas id="rc"></canvas><div class="row" style="margin-top:8px"><button class="btn" onclick="saveImg()">이미지 저장</button>${navigator.canShare ? '<button class="btn sec" onclick="shareImg()">이미지 공유</button>' : ''}</div></div>
+    <pre class="txt">${esc(resultText())}</pre></div>
+  ${me.role === 'admin' ? `<div class="card"><h2>투표 초기화</h2><p class="muted">모든 투표 내용을 지웁니다. 새 투표를 시작할 때 사용하세요. (제품·계정·주문 목록은 유지)</p><button class="btn bad" onclick="clearVotes()">투표 내용 전체 삭제</button></div>` : ''}`;
+  if (keep) toggleImg();
+}
+function startPick() { const r = calc(); if (!r.rows.length) return toast('주문할 제품이 없습니다'); orderPick = true; orderSel = new Set(r.rows.map(p => p.m.id)); drawResults(); }
+function cancelPick() { orderPick = false; orderSel = new Set(); drawResults(); }
+function pickOne(id, on) { if (on) orderSel.add(id); else orderSel.delete(id); drawResults(); }
+function pickAll(on) { orderSel = on ? new Set(calc().rows.map(p => p.m.id)) : new Set(); drawResults(); }
+async function goOrder() {
+  const ids = [...orderSel]; if (!ids.length) return toast('주문할 품목을 체크하세요');
+  try {
+    const j = await call('orderAdd', { ids });
+    orderPick = false; orderSel = new Set();
+    toast(j.added ? `${j.added}개 품목을 주문 목록에 담았습니다` : '이미 주문 목록에 있는 품목입니다');
+    await go('order');
+  } catch (e) { toast(e.message); }
+}
+async function copyText() { try { await navigator.clipboard.writeText(resultText()); toast('복사했습니다'); } catch { toast('복사 실패 — 아래 글을 직접 선택해 복사하세요'); } }
+async function shareText() { try { await navigator.share({ title: cfg.title, text: resultText() }); } catch {} }
+async function clearVotes() {
+  if (!confirm('모든 투표 내용을 삭제할까요? 되돌릴 수 없습니다.')) return;
+  try { await call('clearVotes'); renderResults(); } catch (e) { toast(e.message); }
+}
+function toggleImg() { const on = $('#withImg').checked; $('#imgBox').style.display = on ? 'block' : 'none'; if (on) drawCanvas(); }
+function drawCanvas() {
+  const r = calc(), c = $('#rc'), W = 720, P = 30, F = '"Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+  const ctx = c.getContext('2d'); const rows = [];
+  const wrap = (t, w, font) => { ctx.font = font; const out = []; let cur = ''; for (const ch of t) { if (ctx.measureText(cur + ch).width > w) { out.push(cur); cur = ch; } else cur += ch; } if (cur) out.push(cur); return out.length ? out : ['']; };
+  rows.push({ k: 'h1', a: cfg.title + ' 투표 결과' }, { k: 'sub', a: `${fmtT(Date.now())} · 참여 ${r.people.length}명` }, { k: 'h2', a: '제품별' });
+  r.rows.forEach(p => rows.push({ k: 'row', a: p.m.name + (p.m.unit ? ` (${p.m.unit})` : ''), b: `${p.qty}개 ${p.m.price ? won(p.qty * p.m.price) : ''}` }));
+  if (!r.rows.length) rows.push({ k: 'row', a: '(투표 없음)', b: '' });
+  rows.push({ k: 'sum', a: '합계', b: `${r.totalQty}개 · ${won(r.totalPrice)}` }, { k: 'h2', a: '참여자별' });
+  r.people.forEach(p => wrap(`${p.name}: ${p.parts.join(', ')}`, W - P * 2, '20px ' + F).forEach(ln => rows.push({ k: 'ppl', a: ln })));
+  if (r.non.length) wrap('미참여: ' + r.non.join(', '), W - P * 2, '18px ' + F).forEach(ln => rows.push({ k: 'non', a: ln }));
+  const H = { h1: 60, sub: 34, h2: 50, row: 34, sum: 46, ppl: 30, non: 28 };
+  c.width = W; c.height = P * 2 + rows.reduce((s, x) => s + H[x.k], 0);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  let y = P;
+  rows.forEach(x => {
+    const h = H[x.k], base = y + h - 10; ctx.textAlign = 'left';
+    if (x.k === 'h1') { ctx.fillStyle = '#1d2433'; ctx.font = 'bold 32px ' + F; ctx.fillText(x.a, P, base); }
+    else if (x.k === 'sub') { ctx.fillStyle = '#6b7488'; ctx.font = '18px ' + F; ctx.fillText(x.a, P, base); }
+    else if (x.k === 'h2') { ctx.fillStyle = '#3b6cf6'; ctx.font = 'bold 22px ' + F; ctx.fillText('■ ' + x.a, P, base); }
+    else if (x.k === 'row' || x.k === 'sum') {
+      ctx.fillStyle = '#1d2433'; ctx.font = (x.k === 'sum' ? 'bold ' : '') + '20px ' + F;
+      let a = x.a; while (ctx.measureText(a).width > W - P * 2 - 200 && a.length > 1) a = a.slice(0, -1); if (a !== x.a) a += '…';
+      ctx.fillText(a, P, base); ctx.textAlign = 'right'; ctx.fillText(x.b, W - P, base);
+      ctx.strokeStyle = '#e3e7ef'; ctx.beginPath(); ctx.moveTo(P, y + h - 2); ctx.lineTo(W - P, y + h - 2); ctx.stroke();
+    }
+    else if (x.k === 'ppl') { ctx.fillStyle = '#1d2433'; ctx.font = '20px ' + F; ctx.fillText(x.a, P, base); }
+    else { ctx.fillStyle = '#6b7488'; ctx.font = '18px ' + F; ctx.fillText(x.a, P, base); }
+    y += h;
+  });
+}
+const canvasBlob = () => new Promise(res => $('#rc').toBlob(res, 'image/png'));
+async function saveImg() {
+  const b = await canvasBlob(), a = document.createElement('a'); a.href = URL.createObjectURL(b);
+  a.download = `${cfg.title}_결과_${new Date().toISOString().slice(0, 10)}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+async function shareImg() {
+  const b = await canvasBlob(), f = new File([b], '투표결과.png', { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: cfg.title }); } catch {} } else saveImg();
+}
+
+/* ===== 설정 ===== */
+async function renderSettings() {
+  let h = `<div class="pagehead"><h2 style="margin:6px 0">설정</h2></div>`;
+  try {
+    if (can('settings')) h += `
+    <div class="card"><h2>페이지 설정</h2>
+      <div class="grid"><div><label class="f">페이지 제목</label><input type="text" id="s-title" value="${esc(cfg.title)}"></div>
+        <div><label class="f">가입 방식</label><select id="s-mode" onchange="document.getElementById('s-codebox').style.display=this.value==='code'?'block':'none'">
+          <option value="list" ${cfg.mode !== 'code' ? 'selected' : ''}>사전 등록 명단만 입장</option><option value="code" ${cfg.mode === 'code' ? 'selected' : ''}>입장 코드로 자가 가입</option></select></div>
+        <div><label class="f">투표 화면 표시</label>
+          <label class="row" style="gap:6px"><input type="checkbox" id="s-showqty" ${cfg.showQty !== false ? 'checked' : ''}> 수량 선택·표시</label>
+          <label class="row" style="gap:6px"><input type="checkbox" id="s-showprice" ${cfg.showPrice !== false ? 'checked' : ''}> 금액 표시</label>
+          <label class="row" style="gap:6px"><input type="checkbox" id="s-showtotal" ${cfg.showTotal !== false ? 'checked' : ''}> 내 선택 합계 (하단)</label></div>
+        <div id="s-codebox" style="display:${cfg.mode === 'code' ? 'block' : 'none'}"><label class="f">입장 코드 (비우면 코드 없이 가입)</label><input type="text" id="s-code" value="${esc(cfg.code || '')}"></div></div>
+      <p class="muted" style="margin-bottom:0">명단 방식에서는 아래 계정 명단에 등록된 이름만 입장할 수 있어 입장 코드가 필요 없습니다.</p>
+      <div class="row" style="margin-top:10px"><button class="btn" onclick="saveBasic()">저장</button></div></div>`;
+    if (me.role === 'admin') {
+      const p = cfg.perms.manager;
+      h += `<div class="card"><h2>관리 메뉴 노출 권한</h2><p class="muted">관리자는 모든 메뉴가 보입니다. 매니저에게 보여줄 관리 메뉴를 고르세요.</p>
+      <table><tr><th>관리 메뉴</th><th>관리자</th><th>매니저</th><th>참여자</th></tr>
+        ${[['menu', '등록'], ['results', '결과 보기'], ['order', '주문'], ['settings', '설정 · 페이지/가입 방식'], ['users', '설정 · 계정 명단'], ['logs', '설정 · 로그인 로그']].map(([k, n]) => `<tr><td>${n}</td><td>✔</td><td><input type="checkbox" ${p[k] ? 'checked' : ''} onchange="setPerm('${k}',this.checked)"></td><td>—</td></tr>`).join('')}</table></div>`;
+    }
+    if (can('users')) {
+      userList = (await call('users')).users;
+      h += `
+      <div class="card"><h2>계정 명단 (${userList.length})</h2>
+        <label class="f">이름 미리 등록 (쉼표 또는 줄바꿈으로 여러 명)</label>
+        <textarea id="u-add" style="min-height:64px" placeholder="홍길동, 김철수&#10;이영희"></textarea>
+        <div class="row" style="margin:8px 0 12px"><button class="btn sm" onclick="addUsers()">명단에 추가</button></div>
+        <div>
+        ${userList.map((u, i) => { const self = u.name.toLowerCase() === me.name.toLowerCase(); const editable = me.role === 'admin' || u.role === 'user';
+          const roleCell = me.role === 'admin' && !self ? `<select onchange="setRole(${i},this.value)"><option value="user" ${u.role === 'user' ? 'selected' : ''}>참여자</option><option value="manager" ${u.role === 'manager' ? 'selected' : ''}>매니저</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>관리자</option></select>` : `<span class="chip gray">${{ admin: '관리자', manager: '매니저', user: '참여자' }[u.role]}</span>`;
+          return `<div class="urow"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span class="un">${esc(u.name)}</span><span>${roleCell}</span></div>
+          <div class="muted" style="margin:4px 0 8px">비밀번호 ${u.hasPw ? '설정됨' : '미설정'} · 최근 입장 ${u.last ? fmtT(u.last) : '-'}</div>
+          <div class="row">${editable ? `<button class="btn sec sm" onclick="resetPw(${i})">비번 초기화</button>` : ''}${me.role === 'admin' && !self ? `<button class="btn bad sm" onclick="delUser(${i})">삭제</button>` : ''}</div></div>`; }).join('')}</div>
+        <p class="muted">참여자 비밀번호를 초기화하면 다음 입장 때 본인이 새로 정합니다. 매니저·관리자는 임시 비밀번호 0000이 되고 다음 입장 때 변경해야 합니다.</p></div>`;
+    }
+    if (can('logs')) {
+      const lg = (await call('logs')).logs;
+      h += `<div class="card"><div class="pagehead"><h2>로그인 로그 (최근 ${lg.length}건)</h2><div class="row"><button class="btn sec sm" onclick="renderSettings()">새로고침</button>${me.role === 'admin' ? '<button class="btn bad sm" onclick="clearLogs()">로그 지우기</button>' : ''}</div></div>
+      <div class="scroll"><table><tr><th>시간</th><th>이름</th><th>내용</th></tr>${lg.map(l => `<tr><td class="nw">${fmtT(l.t)}</td><td>${esc(l.name)}</td><td>${esc(l.ev)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">기록 없음</td></tr>'}</table></div></div>`;
+    }
+  } catch (e) { return; }
+  if (me.role === 'admin') h += `
+  <div class="card"><h2>연결 설정</h2>
+    <p class="muted">현재 서버: ${DEFAULT_API_URL && API === DEFAULT_API_URL ? '코드에 설정된 주소 사용 중' : esc(API)}</p>
+    <label class="f">서버 주소 변경 (이 기기에서만 적용 · 비우면 코드의 기본 주소 사용)</label>
+    <input type="url" id="s-api" value="${esc(localStorage.getItem('vw_api') || '')}" placeholder="https://script.google.com/macros/s/…/exec">
+    <div class="row" style="margin-top:8px"><button class="btn sm" onclick="saveApi('#s-api')">저장</button></div></div>`;
+  if ($('#main')) $('#main').innerHTML = h;
+}
+async function saveBasic() {
+  try {
+    await call('basicSave', { title: $('#s-title').value.trim(), mode: $('#s-mode').value, code: $('#s-code') ? $('#s-code').value.trim() : cfg.code, showQty: $('#s-showqty').checked, showPrice: $('#s-showprice').checked, showTotal: $('#s-showtotal').checked });
+    await loadState(); toast('저장했습니다'); shell();
+  } catch (e) { toast(e.message); }
+}
+async function setPerm(k, v) { try { await call('permSave', { k, v }); cfg.perms.manager[k] = v; toast('저장했습니다'); } catch (e) { toast(e.message); } }
+async function addUsers() {
+  const names = $('#u-add').value; if (!names.trim()) return toast('이름을 입력하세요');
+  try { const j = await call('userAdd', { names }); toast(`${j.added}명 추가${j.skipped.length ? ' · 제외: ' + j.skipped.join(', ') : ''}`); renderSettings(); } catch (e) { toast(e.message); }
+}
+async function setRole(i, role) { try { await call('setRole', { key: userList[i].key, role }); toast('권한을 변경했습니다'); } catch (e) { toast(e.message); } renderSettings(); }
+async function resetPw(i) {
+  const u = userList[i]; if (!confirm(`${u.name} 의 비밀번호를 초기화할까요?`)) return;
+  try { const j = await call('resetPw', { key: u.key }); toast(j.temp ? '임시 비밀번호 0000으로 초기화했습니다' : '초기화했습니다 (다음 입장 때 새로 설정)'); renderSettings(); } catch (e) { toast(e.message); }
+}
+async function delUser(i) {
+  const u = userList[i]; if (!confirm(`계정 "${u.name}" 과(와) 이 사람의 투표를 삭제할까요?`)) return;
+  try { await call('userDel', { key: u.key }); renderSettings(); } catch (e) { toast(e.message); }
+}
+async function clearLogs() { if (!confirm('로그인 로그를 모두 지울까요?')) return; try { await call('clearLogs'); renderSettings(); } catch (e) { toast(e.message); } }
+
+/* ===== 모달 ===== */
+function openModal(html, locked) {
+  $('#modalRoot').innerHTML = `<div class="overlay" ${locked ? '' : 'onclick="if(event.target===this)closeModal()"'}><div class="modal">${html}</div></div>`;
+}
+function closeModal() { $('#modalRoot').innerHTML = ''; }
+
+
+/* ===== 제품 리스트 내보내기 / 불러오기 (CSV) ===== */
+const MENU_HEAD = ['제품이름', '종류', '포장단위', '가격', '링크', '사진주소'];
+const csvEsc = v => { v = String(v ?? ''); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+function exportMenus() {
+  const lines = [MENU_HEAD.join(',')].concat(menus.map(m => [m.name, m.type, m.unit, m.price || '', m.link, m.image].map(csvEsc).join(',')));
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const d = new Date(), p = x => String(x).padStart(2, '0');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `${cfg.title}_제품목록_${String(d.getFullYear()).slice(2)}${p(d.getMonth() + 1)}${p(d.getDate())}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000); toast(menus.length ? `${menus.length}개 내보냈습니다` : '빈 양식을 내려받았습니다');
+}
+function parseCSV(text) {
+  text = text.replace(/^﻿/, '');
+  const first = text.split(/\r?\n/)[0] || '', d = first.includes('\t') ? '\t' : ',';
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === d) { row.push(cur); cur = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cur); cur = ''; if (row.some(x => x.trim() !== '')) rows.push(row); row = []; }
+    else cur += c;
+  }
+  row.push(cur); if (row.some(x => x.trim() !== '')) rows.push(row);
+  return rows;
+}
+function rowsToItems(rows) {
+  if (!rows.length) return [];
+  const ALIAS = { name: ['제품이름', '제품명', '이름', 'name'], type: ['종류', 'type'], unit: ['포장단위', '포장', '단위', 'unit'], price: ['가격', 'price'], link: ['링크', 'link', 'url'], image: ['사진주소', '사진', '이미지', 'image'] };
+  const h = rows[0].map(x => x.trim().toLowerCase()); let idx = {}, hasHead = false;
+  for (const [k, al] of Object.entries(ALIAS)) { const i = h.findIndex(x => al.includes(x)); if (i >= 0) { idx[k] = i; hasHead = true; } }
+  if (!hasHead) idx = { name: 0, type: 1, unit: 2, price: 3, link: 4, image: 5 }; else { rows = rows.slice(1); if (idx.name === undefined) return []; }
+  const g = (r, k) => (idx[k] !== undefined && r[idx[k]] !== undefined) ? String(r[idx[k]]).trim() : '';
+  return rows.map(r => ({ name: g(r, 'name'), type: g(r, 'type'), unit: g(r, 'unit'), price: parseInt(g(r, 'price').replace(/[^\d]/g, '')) || 0, link: g(r, 'link'), image: g(r, 'image') })).filter(x => x.name);
+}
+let pendingImport = [];
+async function onImportFile(inp) {
+  const f = inp.files && inp.files[0]; inp.value = ''; if (!f) return;
+  try {
+    const buf = await f.arrayBuffer(); let text;
+    try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch (e) { text = new TextDecoder('euc-kr').decode(buf); }
+    pendingImport = rowsToItems(parseCSV(text));
+  } catch (e) { return toast('파일을 읽지 못했습니다: ' + e.message); }
+  if (!pendingImport.length) return toast('불러올 제품이 없습니다. 열 이름(제품이름 등)과 내용을 확인하세요');
+  const n = pendingImport.length;
+  openModal(`<h3>제품 불러오기</h3><p>${n}개 제품을 읽었습니다.${n > 300 ? ' (한 번에 300개까지만 불러옵니다)' : ''}</p>
+    <div class="muted" style="margin-bottom:10px">${pendingImport.slice(0, 5).map(x => esc(x.name)).join(', ')}${n > 5 ? ' …' : ''}</div>
+    <div class="row"><button class="btn" onclick="doImport(false)">기존에 추가</button><button class="btn bad" onclick="doImport(true)">전체 교체</button><button class="btn sec" onclick="closeModal()">취소</button></div>
+    <p class="muted" style="margin:10px 0 0">추가: 이름과 링크가 같은 제품은 건너뜁니다. 전체 교체: 지금 등록된 제품을 모두 지우고 불러옵니다.</p>`);
+}
+async function doImport(replace) {
+  if (replace && menus.length && !confirm(`등록된 ${menus.length}개 제품을 모두 지우고 교체할까요? 되돌릴 수 없습니다.`)) return;
+  try {
+    const j = await call('menuImport', { items: pendingImport, replace });
+    closeModal(); await loadState(); toast(`${j.added}개 불러옴${j.skipped ? ' · 건너뜀 ' + j.skipped + '개' : ''}`); renderMenu();
+  } catch (e) { toast(e.message); }
+}
+
+
+/* ===== 제품 이름으로 일괄 등록 ===== */
+function namesToItems(text) {
+  const out = [];
+  text.split(/\r?\n/).forEach(line => {
+    const r = parseCSV(line)[0]; if (!r) return;
+    const f = r.map(x => String(x).trim()); if (!f[0]) return;
+    const isNum = x => /^[\d,\s]+원?$/.test(x) && /\d/.test(x), num = x => parseInt(String(x).replace(/[^\d]/g, '')) || 0;
+    const it = { name: f[0], type: '', unit: '', price: 0, link: '', image: '' };
+    if (f.length === 2) { if (isNum(f[1])) it.price = num(f[1]); else it.type = f[1]; }
+    else if (f.length >= 3) { it.type = f[1]; it.unit = f[2]; it.price = num(f.slice(3).join('')); }
+    out.push(it);
+  });
+  return out;
+}
+async function bulkNames() {
+  const items = namesToItems($('#n-list').value);
+  if (!items.length) return toast('제품 이름을 입력하세요');
+  $('#n-msg').textContent = '등록 중…';
+  try {
+    const j = await call('menuImport', { items, replace: false });
+    $('#n-list').value = ''; await loadState(); toast(`${j.added}개 등록${j.skipped ? ' · 이미 있어서 건너뜀 ' + j.skipped + '개' : ''}`); renderMenu();
+  } catch (e) { $('#n-msg').textContent = ''; toast(e.message); }
+}
+
+
+/* ===== 주문 페이지 ===== */
+async function renderOrder() {
+  if (!$('#main')) return;
+  try { const j = await call('orderGet'); order = j.order; orderVoters = j.voters; } catch (e) { return; }
+  drawOrder();
+}
+const menuNo = id => { const i = menus.findIndex(m => m.id === id); return i < 0 ? '-' : i + 1; };
+function orderTotals() {
+  let goods = 0, ship = 0, cnt = 0, done = 0;
+  order.items.forEach(x => { if (!x.inc) return; cnt++; if (x.done) done++; goods += (Number(x.price) || 0) * (Number(x.qty) || 0); if (x.ship) ship += Number(x.fee) || 0; });
+  return { goods, ship, total: goods + ship, cnt, done };
+}
+function payInfo() {
+  const t = orderTotals(), P = order.pay;
+  const n = orderVoters.filter(v => !P.excl.includes(v.key)).length;
+  const sub = P.subsidyOn ? (Number(P.subsidy) || 0) : 0, settle = Math.max(0, t.total - sub), per = n ? Math.ceil(settle / n) : 0;
+  return { ...t, n, sub, settle, per, diff: per * n - settle };
+}
+function orderCard(x, i) {
+  return `<div class="card ord ${x.done ? 'done' : ''}" id="o-${i}">
+    <div class="row" style="justify-content:space-between">
+      <div class="row"><input type="checkbox" class="pick" title="합계에 포함" ${x.inc ? 'checked' : ''} onchange="oSet(${i},'inc',this.checked)"><span class="no">${menuNo(x.id)}</span><span class="nm">${esc(x.name)}</span><span class="muted">${esc(x.unit)}</span><span class="chip" id="od-${i}" style="display:${x.done ? 'inline-flex' : 'none'}">✔ 주문 완료</span></div>
+      <div class="row">${x.link ? `<a class="btn sec sm" href="${esc(x.link)}" target="_blank" rel="noopener">사이트 열기</a>` : '<span class="muted">링크 없음</span>'}<button class="btn bad sm" onclick="oDel(${i})">삭제</button></div></div>
+    <div class="grid" style="margin-top:8px">
+      <div><label class="f">가격(원)</label><input type="number" min="0" value="${x.price}" oninput="oSet(${i},'price',this.value)"></div>
+      <div><label class="f">수량</label><input type="number" min="0" value="${x.qty}" oninput="oSet(${i},'qty',this.value)"></div>
+      <div><label class="f">소계 (배송비 포함)</label><div class="nm" id="ol-${i}">-</div></div></div>
+    <div class="row" style="margin-top:8px">
+      <label class="row" style="gap:4px"><input type="checkbox" ${x.ship ? 'checked' : ''} onchange="oSet(${i},'ship',this.checked)"> 배송비</label>
+      <input type="number" min="0" id="of-${i}" value="${x.fee || ''}" placeholder="배송비 입력(원)" style="width:150px;display:${x.ship ? 'block' : 'none'}" oninput="oSet(${i},'fee',this.value)">
+      <label class="row" style="gap:4px;margin-left:auto"><input type="checkbox" ${x.done ? 'checked' : ''} onchange="oSet(${i},'done',this.checked)"> 주문 완료</label></div></div>`;
+}
+function drawOrder() {
+  if (page !== 'order' || !$('#main')) return;
+  const P = order.pay;
+  $('#main').innerHTML = `
+  <div class="pagehead"><h2 style="margin:6px 0">주문</h2><div class="row"><span class="muted" id="o-save"></span><button class="btn bad sm" onclick="clearOrder()">주문 목록 비우기</button></div></div>
+  ${order.items.length ? order.items.map(orderCard).join('') : '<div class="card muted">주문 목록이 비어 있습니다. "결과 보기"에서 "주문하기"를 눌러 품목을 담아 주세요.</div>'}
+  <div class="card" id="o-sum"></div>
+  <div class="card"><h2>비용 계산</h2>
+    <div class="muted">정산에 포함할 참여자를 눌러 선택하세요. 선택된 인원으로 나눕니다.</div>
+    <div class="row" style="margin:8px 0" id="pay-chips"></div>
+    <div class="row" style="margin-bottom:8px"><button class="btn sec sm" onclick="payAll(true)">전체 선택</button><button class="btn sec sm" onclick="payAll(false)">전체 해제</button></div>
+    <div class="row"><label class="row" style="gap:4px"><input type="checkbox" ${P.subsidyOn ? 'checked' : ''} onchange="paySet('subsidyOn',this.checked)"> 지원금 있음</label>
+      <input type="number" min="0" id="sub-amt" value="${P.subsidy || ''}" placeholder="지원금 입력(원)" style="width:160px;display:${P.subsidyOn ? 'block' : 'none'}" oninput="paySet('subsidy',this.value)"></div>
+    <div id="pay-res" style="margin-top:10px"></div>
+    <div class="row" style="margin-top:8px"><button class="btn" onclick="copyPay()">정산 안내 복사</button></div></div>`;
+  refreshOrderUI();
+}
+function refreshOrderUI() {
+  if (!order || !$('#o-sum')) return;
+  order.items.forEach((x, i) => { const e = $('#ol-' + i); if (e) e.textContent = won((Number(x.price) || 0) * (Number(x.qty) || 0) + (x.ship ? Number(x.fee) || 0 : 0)); });
+  const p = payInfo();
+  $('#o-sum').innerHTML = `<h2>합산 금액</h2>
+    <div class="row" style="justify-content:space-between"><span>상품 합계</span><b>${won(p.goods)}</b></div>
+    <div class="row" style="justify-content:space-between"><span>배송비 합계</span><b>${won(p.ship)}</b></div>
+    <div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:6px;margin-top:6px"><span>총 금액</span><span class="bigsum">${won(p.total)}</span></div>
+    <div class="muted" style="margin-top:4px">합계에 포함된 ${p.cnt}개 품목 중 주문 완료 ${p.done}개</div>`;
+  $('#pay-chips').innerHTML = orderVoters.length ? orderVoters.map((v, i) => `<button class="payer ${order.pay.excl.includes(v.key) ? '' : 'on'}" onclick="payToggle(${i})">${esc(v.name)}</button>`).join('') : '<span class="muted">투표 참여자가 없습니다.</span>';
+  $('#pay-res').innerHTML = `
+    <div class="row" style="justify-content:space-between"><span>총 금액</span><b>${won(p.total)}</b></div>
+    ${order.pay.subsidyOn ? `<div class="row" style="justify-content:space-between"><span>지원금</span><b>− ${won(p.sub)}</b></div>` : ''}
+    <div class="row" style="justify-content:space-between"><span>정산 금액</span><b>${won(p.settle)}</b></div>
+    <div class="row" style="justify-content:space-between"><span>정산 인원</span><b>${p.n}명</b></div>
+    <div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:6px;margin-top:6px"><span>1인당</span><span class="bigsum">${p.n ? won(p.per) : '-'}</span></div>
+    ${p.n && p.diff ? `<div class="muted">원 단위 올림 기준 · 걷는 합계가 ${won(p.diff)} 더 많습니다</div>` : ''}`;
+}
+function oSet(i, k, v) {
+  const x = order.items[i]; if (!x) return;
+  if (k === 'price' || k === 'qty' || k === 'fee') x[k] = Math.max(0, Number(v) || 0); else x[k] = v;
+  if (k === 'ship') { const e = $('#of-' + i); if (e) e.style.display = v ? 'block' : 'none'; }
+  if (k === 'done') { const c = $('#o-' + i), b = $('#od-' + i); if (c) c.classList.toggle('done', v); if (b) b.style.display = v ? 'inline-flex' : 'none'; }
+  refreshOrderUI(); scheduleSave();
+}
+function oDel(i) { if (!confirm('이 품목을 주문 목록에서 뺄까요?')) return; order.items.splice(i, 1); scheduleSave(); drawOrder(); }
+function paySet(k, v) {
+  if (k === 'subsidy') order.pay.subsidy = Math.max(0, Number(v) || 0); else order.pay[k] = v;
+  if (k === 'subsidyOn') { const e = $('#sub-amt'); if (e) e.style.display = v ? 'block' : 'none'; }
+  refreshOrderUI(); scheduleSave();
+}
+function payToggle(n) { const key = orderVoters[n].key, a = order.pay.excl, i = a.indexOf(key); if (i >= 0) a.splice(i, 1); else a.push(key); refreshOrderUI(); scheduleSave(); }
+function payAll(on) { order.pay.excl = on ? [] : orderVoters.map(v => v.key); refreshOrderUI(); scheduleSave(); }
+function scheduleSave() { const e = $('#o-save'); if (e) e.textContent = '저장 중…'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { saveTimer = null; try { await saveOrder(); const e2 = $('#o-save'); if (e2) e2.textContent = '저장됨'; } catch (er) { const e2 = $('#o-save'); if (e2) e2.textContent = '저장 실패'; toast(er.message); } }, 700); }
+async function saveOrder() { await call('orderSave', { order }); }
+async function clearOrder() { if (!confirm('주문 목록과 정산 설정을 모두 비울까요?')) return; try { await call('orderClear'); await renderOrder(); } catch (e) { toast(e.message); } }
+async function copyPay() {
+  const p = payInfo(), L = [`[${cfg.title}] 정산 안내`, `총 금액 ${won(p.total)} (상품 ${won(p.goods)} + 배송비 ${won(p.ship)})`];
+  if (order.pay.subsidyOn) L.push(`지원금 ${won(p.sub)}`);
+  L.push(`정산 금액 ${won(p.settle)} ÷ ${p.n}명 = 1인당 ${p.n ? won(p.per) : '-'}`);
+  const names = orderVoters.filter(v => !order.pay.excl.includes(v.key)).map(v => v.name); if (names.length) L.push('정산 대상: ' + names.join(', '));
+  try { await navigator.clipboard.writeText(L.join('\n')); toast('복사했습니다'); } catch { toast('복사 실패'); }
+}
+
+init();
+</script>
+</body>
+</html>
