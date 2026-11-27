@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#3b6cf6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Snack Poll v1.32</title>
+<title>Snack Poll v1.33</title>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--ink:#1d2433;--sub:#6b7488;--line:#e3e7ef;--acc:#3b6cf6;--acc2:#e8eeff;--ok:#1f9d63;--bad:#d64545;--warn:#b7791f}
 *{box-sizing:border-box}
@@ -207,7 +207,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 <div id="modalRoot"></div>
 
 <script>
-const VERSION = 'v1.32';
+const VERSION = 'v1.33';
 const _AE = 'jVGel9ydldzVBRkStdGbBVzakh2dVRmQlpXd4FlelVWOVhkYtd1dzoUMIZza5Qnd4UlVqp1M1dWLQh1cZRXVnpkQ3cUN4J2Y5Z2SB9ycvM3byNWYt9SbvNmLlx2Zv92ZuQHcpJ3Yz9yL6MHc0RHa';
 const _dec = e => { try { return decodeURIComponent(escape(atob(e.split('').reverse().join('')))); } catch (x) { return ''; } };
 const _enc = u => btoa(unescape(encodeURIComponent(u))).split('').reverse().join('');
@@ -243,7 +243,7 @@ async function call(action, data) {
   const j = await api(action, data);
   if (j.auth) { localStorage.removeItem('vw_tok'); me = null; stopTimers(); renderLogin(j.err); throw new Error(j.err); }
   if (j.err) throw new Error(j.err);
-  if (j.state) { applyState(j.state); stateAt = Date.now(); }
+  if (j.state) { applyState(j.state); stateAt = Date.now(); } else stateAt = 0;
   return j;
 }
 function stopTimers() { clearInterval(pollTimer); clearInterval(tickTimer); }
@@ -690,7 +690,7 @@ async function shareImg() {
   if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: cfg.title }); } catch {} } else saveImg();
 }
 
-const SET_KEYS = ['s_basic', 's_perm', 's_users', 's_logs', 's_conn'];
+const SET_KEYS = ['s_basic', 's_perm', 's_users', 's_logs', 's_backup', 's_conn'];
 function foldAllS(closed) { SET_KEYS.forEach(k => menuFold[k] = closed); saveFold(); renderSettings(); }
 async function renderSettings() {
   let h = `<div class="pagehead"><h2 style="margin:6px 0">설정</h2></div><div class="foldbar" style="margin:0 0 4px"><button class="btn sec sm" onclick="foldAllS(false)">모두 펼치기</button><button class="btn sec sm" onclick="foldAllS(true)">모두 접기</button></div>`;
@@ -736,6 +736,10 @@ async function renderSettings() {
       <div class="scroll"><table><tr><th>시간</th><th>이름</th><th>내용</th></tr>${lg.map(l => `<tr><td class="nw">${fmtT(l.t)}</td><td>${esc(l.name)}</td><td>${esc(l.ev)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">기록 없음</td></tr>'}</table></div>`);
     }
   } catch (e) { return; }
+  if (me.role === 'admin') h += foldCard('s_backup', '설정 내보내기 / 불러오기', `
+    <p class="muted">페이지 설정, 투표 옵션, 매니저 권한, 계정 명단(이름·권한)을 파일로 저장하거나 불러옵니다. 비밀번호와 투표 내용은 포함되지 않으며, 제품 목록은 등록 화면에서 따로 내보냅니다.</p>
+    <div class="row"><button class="btn sec sm" onclick="exportSettings()">내보내기</button><button class="btn sec sm" onclick="document.getElementById('set-file').click()">불러오기</button></div>
+    <input type="file" id="set-file" accept=".json,application/json" style="display:none" onchange="importSettings(this)">`);
   if (me.role === 'admin') h += foldCard('s_conn', '연결 설정', `
     <p class="muted">현재 서버: ${DEFAULT_API_URL && API === DEFAULT_API_URL ? '코드에 설정된 주소 사용 중 (가려짐)' : esc(maskApi(API))}</p>
     <label class="f">서버 주소 변경 (이 기기에서만 적용 · 비우면 코드의 기본 주소 사용)</label>
@@ -747,6 +751,36 @@ async function saveBasic() {
   try {
     await call('basicSave', { title: $('#s-title').value.trim(), mode: $('#s-mode').value, code: $('#s-code') ? $('#s-code').value.trim() : cfg.code, showQty: $('#s-showqty').checked, showPrice: $('#s-showprice').checked, showTotal: $('#s-showtotal').checked, showBulkLink: $('#s-bulklink').checked, showBulkName: $('#s-bulkname').checked });
     await loadState(); toast('저장했습니다'); shell();
+  } catch (e) { toast(e.message); }
+}
+async function exportSettings() {
+  try {
+    const ul = (await call('users')).users.filter(u => u.role !== 'admin').map(u => ({ name: u.name, role: u.role }));
+    const c = cfg, data = { app: 'snack-poll', ver: VERSION, at: new Date().toISOString(),
+      basic: { title: c.title, mode: c.mode, code: c.code || '', showQty: c.showQty !== false, showPrice: c.showPrice !== false, showTotal: c.showTotal !== false, showBulkLink: c.showBulkLink !== false, showBulkName: c.showBulkName !== false },
+      vote: { multi: !!c.multi }, perms: (c.perms && c.perms.manager) || {}, accounts: ul };
+    const b = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = `SnackPoll_설정_${new Date().toISOString().slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    toast('내보냈습니다');
+  } catch (e) { toast(e.message); }
+}
+async function importSettings(inp) {
+  const file = inp.files[0]; inp.value = ''; if (!file) return;
+  let d; try { d = JSON.parse(await file.text()); } catch (e) { return toast('설정 파일을 읽을 수 없습니다'); }
+  if (!d || d.app !== 'snack-poll' || !d.basic) return toast('Snack Poll 설정 파일이 아닙니다');
+  const acc = Array.isArray(d.accounts) ? d.accounts.filter(a => a && a.name) : [];
+  if (!confirm(`설정을 불러올까요?\n- 페이지 설정·투표 옵션·매니저 권한을 덮어씁니다.\n- 계정 ${acc.length}명은 없는 이름만 추가하고, 기존 계정의 비밀번호는 바뀌지 않습니다.`)) return;
+  try {
+    const b = d.basic;
+    await call('basicSave', { title: String(b.title || 'Snack Poll'), mode: b.mode === 'code' ? 'code' : 'list', code: String(b.code || ''), showQty: b.showQty !== false, showPrice: b.showPrice !== false, showTotal: b.showTotal !== false, showBulkLink: b.showBulkLink !== false, showBulkName: b.showBulkName !== false });
+    await call('optsSave', { multi: !!(d.vote && d.vote.multi), deadline: cfg.deadline ? toLocalInput(cfg.deadline) : '', closed: !!cfg.closed });
+    for (const k of ['menu', 'settings', 'users', 'logs', 'results', 'order']) if (d.perms && k in d.perms) await call('permSave', { k, v: !!d.perms[k] });
+    let added = 0, roles = 0;
+    if (acc.length) {
+      const j = await call('userAdd', { names: acc.map(a => a.name).join('\n') }); added = j.added;
+      for (const a of acc) if (a.role === 'manager') { try { await call('setRole', { key: String(a.name).trim().toLowerCase(), role: 'manager' }); roles++; } catch (e) {} }
+    }
+    await loadState(); toast(`불러왔습니다${acc.length ? ` · 계정 ${added}명 추가` : ''}`); shell();
   } catch (e) { toast(e.message); }
 }
 async function setPerm(k, v) { try { await call('permSave', { k, v }); cfg.perms.manager[k] = v; toast('저장했습니다'); } catch (e) { toast(e.message); } }
@@ -899,8 +933,11 @@ function drawOrder() {
     <div class="row"><label class="row" style="gap:4px"><input type="checkbox" ${P.subsidyOn ? 'checked' : ''} onchange="paySet('subsidyOn',this.checked)"> 지원금 있음</label>
       <input type="number" min="0" id="sub-amt" value="${P.subsidy || ''}" placeholder="지원금 입력(원)" style="width:160px;display:${P.subsidyOn ? 'block' : 'none'}" oninput="paySet('subsidy',this.value)"></div>
     <div id="pay-res" style="margin-top:10px"></div>
-    <div class="row" style="margin-top:8px"><button class="btn" onclick="copyPay()">정산 안내 복사</button></div></div>`;
-  refreshOrderUI();
+    <div class="row" style="margin-top:8px"><button class="btn" onclick="copyPay()">정산 안내 복사</button>
+      <label class="row" style="gap:4px"><input type="checkbox" id="payImg" ${payImgOn ? 'checked' : ''} onchange="togglePayImg()"> 이미지로 공유</label></div>
+    <div id="payBox" style="display:none;margin-top:8px"><canvas id="pc" style="max-width:100%;border:1px solid var(--line);border-radius:10px"></canvas>
+      <div class="row" style="margin-top:8px"><button class="btn" onclick="savePayImg()">이미지 저장</button>${navigator.canShare ? '<button class="btn sec" onclick="sharePayImg()">이미지 공유</button>' : ''}</div></div></div>`;
+  refreshOrderUI(); if (payImgOn) togglePayImg(true);
 }
 function refreshOrderUI() {
   if (!order || !$('#o-sum')) return;
@@ -922,6 +959,7 @@ function refreshOrderUI() {
     <div class="row" style="justify-content:space-between"><span>정산 인원</span><b>${p.n}명</b></div>
     <div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:6px;margin-top:6px"><span>1인당</span><span class="bigsum">${p.n ? won(p.per) : '-'}</span></div>
     ${p.n && p.diff ? `<div class="muted">원 단위 올림 기준 · 걷는 합계가 ${won(p.diff)} 더 많습니다</div>` : ''}`;
+  if (payImgOn && $('#pc')) drawPayCanvas();
 }
 function oSet(i, k, v) {
   const x = order.items[i]; if (!x) return;
@@ -945,6 +983,46 @@ function payAll(on) { const P = order.pay; P.excl = on ? [] : orderVoters.filter
 function scheduleSave() { const e = $('#o-save'); if (e) e.textContent = '저장 중…'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { saveTimer = null; try { await saveOrder(); const e2 = $('#o-save'); if (e2) e2.textContent = '저장됨'; } catch (er) { const e2 = $('#o-save'); if (e2) e2.textContent = '저장 실패'; toast(er.message); } }, 700); }
 async function saveOrder() { await call('orderSave', { order }); }
 async function clearOrder() { if (!confirm('주문 목록과 정산 설정을 모두 비울까요?')) return; try { await call('orderClear'); await renderOrder(); } catch (e) { toast(e.message); } }
+let payImgOn = false;
+function togglePayImg(keep) { const on = keep === true ? true : $('#payImg').checked; payImgOn = on; const b = $('#payBox'); if (b) b.style.display = on ? 'block' : 'none'; if (on) drawPayCanvas(); }
+function drawPayCanvas() {
+  const c = $('#pc'); if (!c || !order) return;
+  const p = payInfo(), W = 720, P = 30, F = '"Apple SD Gothic Neo","Malgun Gothic",sans-serif', ctx = c.getContext('2d'), rows = [];
+  const wrap = (t, w, font) => { ctx.font = font; const out = []; let cur = ''; for (const ch of t) { if (ctx.measureText(cur + ch).width > w) { out.push(cur); cur = ch; } else cur += ch; } if (cur) out.push(cur); return out.length ? out : ['']; };
+  rows.push({ k: 'h1', a: cfg.title + ' 정산 안내' }, { k: 'sub', a: fmtT(Date.now()) });
+  const its = order.items.filter(x => x.inc);
+  if (its.length) { rows.push({ k: 'h2', a: '주문 내역' }); its.forEach(x => rows.push({ k: 'row', a: `${x.name} × ${x.qty}`, b: won((Number(x.price) || 0) * (Number(x.qty) || 0)) })); }
+  if (p.ship) rows.push({ k: 'row', a: '배송비', b: won(p.ship) });
+  rows.push({ k: 'sum', a: '총 금액', b: won(p.total) });
+  if (order.pay.subsidyOn) rows.push({ k: 'row', a: '지원금', b: '- ' + won(p.sub) }, { k: 'row', a: '정산 금액', b: won(p.settle) });
+  rows.push({ k: 'row', a: '정산 인원', b: p.n + '명' }, { k: 'big', a: '1인당', b: p.n ? won(p.per) : '-' });
+  const names = orderVoters.filter(payOn).map(v => v.name);
+  if (names.length) { rows.push({ k: 'h2', a: '정산 대상' }); wrap(names.join(', '), W - P * 2, '20px ' + F).forEach(ln => rows.push({ k: 'ppl', a: ln })); }
+  const H = { h1: 60, sub: 34, h2: 50, row: 34, sum: 46, big: 64, ppl: 30 };
+  c.width = W; c.height = P * 2 + rows.reduce((t, x) => t + H[x.k], 0);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  let y = P;
+  rows.forEach(x => {
+    const h = H[x.k], base = y + h - 10; ctx.textAlign = 'left';
+    if (x.k === 'h1') { ctx.fillStyle = '#1d2433'; ctx.font = 'bold 32px ' + F; ctx.fillText(x.a, P, base); }
+    else if (x.k === 'sub') { ctx.fillStyle = '#6b7488'; ctx.font = '18px ' + F; ctx.fillText(x.a, P, base); }
+    else if (x.k === 'h2') { ctx.fillStyle = '#3b6cf6'; ctx.font = 'bold 22px ' + F; ctx.fillText('■ ' + x.a, P, base); }
+    else if (x.k === 'ppl') { ctx.fillStyle = '#1d2433'; ctx.font = '20px ' + F; ctx.fillText(x.a, P, base); }
+    else {
+      const big = x.k === 'big'; ctx.fillStyle = big ? '#3b6cf6' : '#1d2433'; ctx.font = (x.k === 'sum' || big ? 'bold ' : '') + (big ? '30px ' : '20px ') + F;
+      let a = x.a; while (ctx.measureText(a).width > W - P * 2 - 220 && a.length > 1) a = a.slice(0, -1); if (a !== x.a) a += '…';
+      ctx.fillText(a, P, base); ctx.textAlign = 'right'; ctx.fillText(x.b, W - P, base);
+      ctx.strokeStyle = '#e3e7ef'; ctx.beginPath(); ctx.moveTo(P, y + h - 2); ctx.lineTo(W - P, y + h - 2); ctx.stroke();
+    }
+    y += h;
+  });
+}
+const payBlob = () => new Promise(res => $('#pc').toBlob(res, 'image/png'));
+async function savePayImg() { const b = await payBlob(), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `${cfg.title}_정산_${new Date().toISOString().slice(0, 10)}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); }
+async function sharePayImg() {
+  const b = await payBlob(), f = new File([b], '정산안내.png', { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: cfg.title }); } catch {} } else savePayImg();
+}
 async function copyPay() {
   const p = payInfo(), L = [`[${cfg.title}] 정산 안내`, `총 금액 ${won(p.total)} (상품 ${won(p.goods)} + 배송비 ${won(p.ship)})`];
   if (order.pay.subsidyOn) L.push(`지원금 ${won(p.sub)}`);
