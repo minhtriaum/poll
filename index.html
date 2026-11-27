@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#3b6cf6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Snack Poll v1.33</title>
+<title>Snack Poll v1.34</title>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--ink:#1d2433;--sub:#6b7488;--line:#e3e7ef;--acc:#3b6cf6;--acc2:#e8eeff;--ok:#1f9d63;--bad:#d64545;--warn:#b7791f}
 *{box-sizing:border-box}
@@ -199,6 +199,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 .payer.no{background:#f6f7fa;border-style:dashed}
 .payer.no.on{background:var(--acc);border-style:solid}
 .pgl{font-size:12px;color:var(--sub);margin:8px 0 2px;width:100%}
+
+.prow{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.prow .pn2{flex:1;font-weight:600}
+.prow.ok{color:var(--sub)}
+.prow.ok .pn2{text-decoration:line-through}
 </style>
 </head>
 <body>
@@ -207,7 +212,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 <div id="modalRoot"></div>
 
 <script>
-const VERSION = 'v1.33';
+const VERSION = 'v1.34';
 const _AE = 'jVGel9ydldzVBRkStdGbBVzakh2dVRmQlpXd4FlelVWOVhkYtd1dzoUMIZza5Qnd4UlVqp1M1dWLQh1cZRXVnpkQ3cUN4J2Y5Z2SB9ycvM3byNWYt9SbvNmLlx2Zv92ZuQHcpJ3Yz9yL6MHc0RHa';
 const _dec = e => { try { return decodeURIComponent(escape(atob(e.split('').reverse().join('')))); } catch (x) { return ''; } };
 const _enc = u => btoa(unescape(encodeURIComponent(u))).split('').reverse().join('');
@@ -279,10 +284,10 @@ function renderLogin(err) {
       ${setup ? `<div class="banner">서버 주소가 아직 설정되지 않았습니다. 관리자는 Apps Script 웹앱 주소를 입력해 주세요.</div>
         <label class="f">서버 주소 (…/exec)</label><input type="password" autocomplete="off" id="lg-api" placeholder="https://script.google.com/macros/s/…/exec">
         <div class="row" style="margin-top:8px"><button class="btn sm" onclick="saveApi('#lg-api')">저장</button></div>`
-      : `${cfg.mode === 'code' ? `<label class="f">입장 코드 (새 이름으로 처음 입장할 때만)</label><input type="text" id="lg-code" autocomplete="off"><div style="height:8px"></div>` : ''}
+      : `${cfg.mode === 'code' ? `<label class="f">입장 코드</label><input type="text" id="lg-code" autocomplete="off"><div style="height:8px"></div>` : ''}
       <label class="f">이름</label><input type="text" id="lg-name" autocomplete="username" maxlength="20">
       <div style="height:8px"></div>
-      <label class="f">비밀번호 (숫자 · 참여자/매니저 4자리, 관리자 6자리)</label><input type="password" id="lg-pw" inputmode="numeric" maxlength="6" autocomplete="current-password">
+      <label class="f">비밀번호</label><input type="password" id="lg-pw" inputmode="numeric" maxlength="6" autocomplete="current-password">
       <div style="height:12px"></div>
       <button class="btn" style="width:100%" id="lg-go" onclick="doLogin()">입장</button>
       <p class="muted" style="margin:10px 0 0">${cfg.mode === 'code' ? '처음 쓰는 이름이면 계정이 새로 만들어지고, 다음부터는 같은 이름·비밀번호로 입장합니다.' : '관리자가 등록한 이름으로 입장합니다. 처음 입장할 때 입력한 비밀번호가 내 비밀번호가 됩니다.'}</p>`}
@@ -303,11 +308,11 @@ function saveApi(sel) {
 async function doLogin(confirmed) {
   const name = $('#lg-name').value.trim(), pw = $('#lg-pw').value.trim(), code = $('#lg-code') ? $('#lg-code').value.trim() : '';
   if (!name) return toast('이름을 입력하세요');
-  if (!/^(\d{4}|\d{6})$/.test(pw)) return toast('비밀번호는 숫자 4자리입니다 (관리자는 6자리)');
+  if (!/^(\d{4}|\d{6})$/.test(pw)) return toast('비밀번호를 숫자로 입력하세요');
   const btn = $('#lg-go'); btn.disabled = true; btn.textContent = '확인 중…';
   try {
     const j = await api('login', { name, pw, code, confirm: confirmed === true });
-    if (j.need === 'setpw') { btn.disabled = false; btn.textContent = '입장'; if (confirm(`"${j.name}" 님은 처음 입장입니다.\n방금 입력한 4자리를 내 비밀번호로 설정할까요?`)) return doLogin(true); return; }
+    if (j.need === 'setpw') { btn.disabled = false; btn.textContent = '입장'; if (confirm(`"${j.name}" 님은 처음 입장입니다.\n방금 입력한 비밀번호를 내 것으로 설정할까요?`)) return doLogin(true); return; }
     if (j.need === 'create') { btn.disabled = false; btn.textContent = '입장'; if (confirm(`"${j.name}" 은(는) 새 이름입니다.\n이 이름과 비밀번호로 계정을 만들까요?`)) return doLogin(true); return; }
     if (j.err) return renderLogin(j.err);
     localStorage.setItem('vw_tok', j.token);
@@ -318,7 +323,7 @@ async function doLogin(confirmed) {
 }
 function forceChange(n) {
   n = n || 4;
-  openModal(`<h3>비밀번호 변경</h3><p class="muted">${n === 6 ? '관리자 비밀번호는 숫자 6자리입니다. ' : ''}새 비밀번호 ${n}자리를 정해 주세요.</p>
+  openModal(`<h3>비밀번호 변경</h3><p class="muted">새 비밀번호 ${n}자리를 정해 주세요.</p>
     <input type="password" id="np1" inputmode="numeric" maxlength="${n}" placeholder="새 비밀번호 ${n}자리">
     <div style="height:8px"></div><input type="password" id="np2" inputmode="numeric" maxlength="${n}" placeholder="한 번 더 입력">
     <div class="row" style="margin-top:12px"><button class="btn" id="npok">변경하고 입장</button></div>`, true);
@@ -898,6 +903,11 @@ function orderTotals() {
   order.items.forEach(x => { if (!x.inc) return; cnt++; if (x.done) done++; goods += (Number(x.price) || 0) * (Number(x.qty) || 0); if (x.ship) ship += Number(x.fee) || 0; });
   return { goods, ship, total: goods + ship, cnt, done };
 }
+const payTarget = () => { const P = order.pay; if (P.method === 'account') return [P.bank, P.acct, P.holder].map(x => String(x || '').trim()).filter(Boolean).join(' '); if (P.method === 'kakao') { const n = String(P.kname || '').trim(); return n ? '카카오페이 ' + n : ''; } return ''; };
+const paySentence = () => { const t = payTarget(); return t ? t + '(으)로 보내주시기 바랍니다.' : ''; };
+const chunk5 = a => { const o = []; for (let i = 0; i < a.length; i += 5) o.push(a.slice(i, i + 5)); return o; };
+function payMethod(m) { order.pay.method = order.pay.method === m ? '' : m; scheduleSave(); drawOrder(); }
+function payPaid(n) { const v = orderVoters[n], P = order.pay; P.paid = P.paid || []; const i = P.paid.indexOf(v.key); if (i >= 0) P.paid.splice(i, 1); else P.paid.push(v.key); refreshOrderUI(); scheduleSave(); }
 const payOn = v => v.voted ? !(order.pay.excl || []).includes(v.key) : (order.pay.incl || []).includes(v.key);
 function payInfo() {
   const t = orderTotals(), P = order.pay;
@@ -933,6 +943,15 @@ function drawOrder() {
     <div class="row"><label class="row" style="gap:4px"><input type="checkbox" ${P.subsidyOn ? 'checked' : ''} onchange="paySet('subsidyOn',this.checked)"> 지원금 있음</label>
       <input type="number" min="0" id="sub-amt" value="${P.subsidy || ''}" placeholder="지원금 입력(원)" style="width:160px;display:${P.subsidyOn ? 'block' : 'none'}" oninput="paySet('subsidy',this.value)"></div>
     <div id="pay-res" style="margin-top:10px"></div>
+    <div style="margin-top:12px"><label class="f">정산 방법</label>
+      <div class="seg"><button class="${P.method === 'account' ? 'on' : ''}" onclick="payMethod('account')">계좌</button><button class="${P.method === 'kakao' ? 'on' : ''}" onclick="payMethod('kakao')">카카오페이</button></div>
+      ${P.method === 'account' ? `<div class="ff" style="margin-top:8px;grid-template-columns:1fr 1.6fr 1fr">
+        <div class="fld"><label>은행</label><input type="text" value="${esc(P.bank || '')}" placeholder="국민" oninput="paySet('bank',this.value)"></div>
+        <div class="fld"><label>계좌번호</label><input type="text" inputmode="numeric" value="${esc(P.acct || '')}" placeholder="123-456-7890" oninput="paySet('acct',this.value)"></div>
+        <div class="fld"><label>이름</label><input type="text" value="${esc(P.holder || '')}" placeholder="홍길동" oninput="paySet('holder',this.value)"></div></div>`
+      : P.method === 'kakao' ? `<div class="ff" style="margin-top:8px;grid-template-columns:1fr"><div class="fld"><label>이름</label><input type="text" value="${esc(P.kname || '')}" placeholder="홍길동" oninput="paySet('kname',this.value)"></div></div>` : ''}
+      <div class="muted" id="pay-msg" style="margin-top:6px"></div></div>
+    <div id="pay-list" style="margin-top:12px"></div>
     <div class="row" style="margin-top:8px"><button class="btn" onclick="copyPay()">정산 안내 복사</button>
       <label class="row" style="gap:4px"><input type="checkbox" id="payImg" ${payImgOn ? 'checked' : ''} onchange="togglePayImg()"> 이미지로 공유</label></div>
     <div id="payBox" style="display:none;margin-top:8px"><canvas id="pc" style="max-width:100%;border:1px solid var(--line);border-radius:10px"></canvas>
@@ -959,6 +978,12 @@ function refreshOrderUI() {
     <div class="row" style="justify-content:space-between"><span>정산 인원</span><b>${p.n}명</b></div>
     <div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:6px;margin-top:6px"><span>1인당</span><span class="bigsum">${p.n ? won(p.per) : '-'}</span></div>
     ${p.n && p.diff ? `<div class="muted">원 단위 올림 기준 · 걷는 합계가 ${won(p.diff)} 더 많습니다</div>` : ''}`;
+  const pm = $('#pay-msg'); if (pm) pm.textContent = paySentence();
+  const pl = $('#pay-list');
+  if (pl) {
+    const ppl = orderVoters.map((v, i) => [v, i]).filter(x => payOn(x[0])), paid = ppl.filter(x => (order.pay.paid || []).includes(x[0].key)).length;
+    pl.innerHTML = ppl.length ? `<label class="f">입금 확인 <span class="chip">${paid}/${ppl.length}명 완료</span></label>` + ppl.map(([v, i]) => `<label class="prow ${(order.pay.paid || []).includes(v.key) ? 'ok' : ''}"><input type="checkbox" class="pick" ${(order.pay.paid || []).includes(v.key) ? 'checked' : ''} onchange="payPaid(${i})"><span class="pn2">${esc(v.name)}</span><b>${p.n ? won(p.per) : '-'}</b></label>`).join('') : '';
+  }
   if (payImgOn && $('#pc')) drawPayCanvas();
 }
 function oSet(i, k, v) {
@@ -997,8 +1022,10 @@ function drawPayCanvas() {
   if (order.pay.subsidyOn) rows.push({ k: 'row', a: '지원금', b: '- ' + won(p.sub) }, { k: 'row', a: '정산 금액', b: won(p.settle) });
   rows.push({ k: 'row', a: '정산 인원', b: p.n + '명' }, { k: 'big', a: '1인당', b: p.n ? won(p.per) : '-' });
   const names = orderVoters.filter(payOn).map(v => v.name);
-  if (names.length) { rows.push({ k: 'h2', a: '정산 대상' }); wrap(names.join(', '), W - P * 2, '20px ' + F).forEach(ln => rows.push({ k: 'ppl', a: ln })); }
-  const H = { h1: 60, sub: 34, h2: 50, row: 34, sum: 46, big: 64, ppl: 30 };
+  if (names.length) { rows.push({ k: 'h2', a: '정산' }); chunk5(names).forEach(ch => rows.push({ k: 'ppl', a: ch.join(', ') })); }
+  const sent = paySentence();
+  if (sent) { rows.push({ k: 'gap', a: '' }); wrap(sent, W - P * 2, 'bold 20px ' + F).forEach(ln => rows.push({ k: 'note', a: ln })); }
+  const H = { h1: 60, sub: 34, h2: 50, row: 34, sum: 46, big: 64, ppl: 30, gap: 12, note: 32 };
   c.width = W; c.height = P * 2 + rows.reduce((t, x) => t + H[x.k], 0);
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
   let y = P;
@@ -1008,6 +1035,8 @@ function drawPayCanvas() {
     else if (x.k === 'sub') { ctx.fillStyle = '#6b7488'; ctx.font = '18px ' + F; ctx.fillText(x.a, P, base); }
     else if (x.k === 'h2') { ctx.fillStyle = '#3b6cf6'; ctx.font = 'bold 22px ' + F; ctx.fillText('■ ' + x.a, P, base); }
     else if (x.k === 'ppl') { ctx.fillStyle = '#1d2433'; ctx.font = '20px ' + F; ctx.fillText(x.a, P, base); }
+    else if (x.k === 'note') { ctx.fillStyle = '#1d2433'; ctx.font = 'bold 20px ' + F; ctx.fillText(x.a, P, base); }
+    else if (x.k === 'gap') { }
     else {
       const big = x.k === 'big'; ctx.fillStyle = big ? '#3b6cf6' : '#1d2433'; ctx.font = (x.k === 'sum' || big ? 'bold ' : '') + (big ? '30px ' : '20px ') + F;
       let a = x.a; while (ctx.measureText(a).width > W - P * 2 - 220 && a.length > 1) a = a.slice(0, -1); if (a !== x.a) a += '…';
@@ -1027,7 +1056,8 @@ async function copyPay() {
   const p = payInfo(), L = [`[${cfg.title}] 정산 안내`, `총 금액 ${won(p.total)} (상품 ${won(p.goods)} + 배송비 ${won(p.ship)})`];
   if (order.pay.subsidyOn) L.push(`지원금 ${won(p.sub)}`);
   L.push(`정산 금액 ${won(p.settle)} ÷ ${p.n}명 = 1인당 ${p.n ? won(p.per) : '-'}`);
-  const names = orderVoters.filter(payOn).map(v => v.name); if (names.length) L.push('정산 대상: ' + names.join(', '));
+  const names = orderVoters.filter(payOn).map(v => v.name); if (names.length) L.push('정산:', ...chunk5(names).map(c => c.join(', ')));
+  const sent = paySentence(); if (sent) L.push('', sent);
   try { await navigator.clipboard.writeText(L.join('\n')); toast('복사했습니다'); } catch { toast('복사 실패'); }
 }
 
