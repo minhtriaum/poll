@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#3b6cf6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Snack Poll v1.31</title>
+<title>Snack Poll v1.32</title>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--ink:#1d2433;--sub:#6b7488;--line:#e3e7ef;--acc:#3b6cf6;--acc2:#e8eeff;--ok:#1f9d63;--bad:#d64545;--warn:#b7791f}
 *{box-sizing:border-box}
@@ -190,6 +190,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 #busybar{position:fixed;left:0;top:0;height:3px;width:100%;z-index:50;background:linear-gradient(90deg,transparent,var(--acc),transparent);background-size:40% 100%;background-repeat:no-repeat;opacity:0;pointer-events:none;transition:opacity .15s}
 #busybar.on{opacity:1;animation:bb 1s linear infinite}
 @keyframes bb{from{background-position:-40% 0}to{background-position:140% 0}}
+
+.t-prod td,.t-ppl td{vertical-align:top}
+.t-ppl{table-layout:fixed}
+.t-ppl td.pn{font-weight:700;word-break:keep-all;overflow-wrap:anywhere}
+.t-ppl td{overflow-wrap:anywhere}
+.pc{display:inline-block;background:#eef2ff;color:var(--ink);border-radius:7px;padding:1px 8px;margin:1px 4px 1px 0;font-size:13px}
+.payer.no{background:#f6f7fa;border-style:dashed}
+.payer.no.on{background:var(--acc);border-style:solid}
+.pgl{font-size:12px;color:var(--sub);margin:8px 0 2px;width:100%}
 </style>
 </head>
 <body>
@@ -198,7 +207,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 <div id="modalRoot"></div>
 
 <script>
-const VERSION = 'v1.31';
+const VERSION = 'v1.32';
 const _AE = 'jVGel9ydldzVBRkStdGbBVzakh2dVRmQlpXd4FlelVWOVhkYtd1dzoUMIZza5Qnd4UlVqp1M1dWLQh1cZRXVnpkQ3cUN4J2Y5Z2SB9ycvM3byNWYt9SbvNmLlx2Zv92ZuQHcpJ3Yz9yL6MHc0RHa';
 const _dec = e => { try { return decodeURIComponent(escape(atob(e.split('').reverse().join('')))); } catch (x) { return ''; } };
 const _enc = u => btoa(unescape(encodeURIComponent(u))).split('').reverse().join('');
@@ -574,10 +583,10 @@ function calc() {
   const people = [];
   votes.forEach(v => {
     let cnt = 0, sum = 0; const parts = [];
-    Object.entries(v.items || {}).forEach(([id, q]) => { const p = per[id]; if (!p || q <= 0) return; p.qty += q; p.voters++; cnt += q; sum += q * (p.m.price || 0); parts.push(`${p.m.name}×${q}`); });
+    Object.entries(v.items || {}).forEach(([id, q]) => { const p = per[id]; if (!p || q <= 0) return; p.qty += q; p.voters++; cnt += q; sum += q * (p.m.price || 0); parts.push(p.m.name); });
     if (cnt) people.push({ name: v.name, parts, cnt, sum });
   });
-  const rows = Object.values(per).filter(p => p.qty > 0).sort((a, b) => b.qty - a.qty);
+  const rows = Object.values(per).filter(p => p.qty > 0).sort((a, b) => b.voters - a.voters || b.qty - a.qty);
   const voted = new Set(votes.map(v => v.key));
   const non = resUsers.filter(u => !voted.has(u.key) && u.key !== 'admin').map(u => u.name);
   return { rows, people, totalQty: rows.reduce((s, r) => s + r.qty, 0), totalPrice: rows.reduce((s, r) => s + r.qty * (r.m.price || 0), 0), non };
@@ -586,10 +595,10 @@ function resultText() {
   const r = calc(), L = [];
   L.push(`[${cfg.title}] 투표 결과 (${fmtT(Date.now())})`, `참여 ${r.people.length}명`, '');
   L.push('■ 제품별');
-  r.rows.forEach(p => L.push(`- ${p.m.name}${p.m.unit ? ' (' + p.m.unit + ')' : ''} ${p.qty}개 / ${p.voters}명${p.m.price ? ' = ' + won(p.qty * p.m.price) : ''}`));
+  r.rows.forEach(p => L.push(`- ${p.m.name}${p.m.unit ? ' (' + p.m.unit + ')' : ''} ${p.voters}명`));
   if (!r.rows.length) L.push('- (투표 없음)');
-  L.push('', `■ 합계: ${r.totalQty}개 / ${won(r.totalPrice)}`, '', '■ 참여자별');
-  r.people.forEach(p => L.push(`- ${p.name}: ${p.parts.join(', ')}${p.sum ? ' (' + won(p.sum) + ')' : ''}`));
+  L.push('', '■ 참여자별');
+  r.people.forEach(p => L.push(`- ${p.name}: ${p.parts.join(', ')}`));
   if (r.non.length) L.push('', `■ 미참여: ${r.non.join(', ')}`);
   return L.join('\n');
 }
@@ -605,14 +614,13 @@ function drawResults() {
   const allOn = r.rows.length > 0 && r.rows.every(p => orderSel.has(p.m.id));
   $('#main').innerHTML = `
   <div class="card"><h2>투표 결과</h2>
-    <div class="row"><span class="chip">참여 ${r.people.length}명</span><span class="chip">총 ${r.totalQty}개</span><span class="chip">${won(r.totalPrice)}</span><span class="chip gray">미참여 ${r.non.length}명</span>
+    <div class="row"><span class="chip">참여 ${r.people.length}명</span><span class="chip gray">미참여 ${r.non.length}명</span>
       <button class="btn sec sm" style="margin-left:auto" onclick="renderResults()">새로고침</button></div></div>
   <div class="card"><div class="pagehead"><h2>제품별</h2>
       ${orderPick ? `<div class="row"><button class="btn" onclick="goOrder()">선택 품목 주문하기 (${orderSel.size})</button><button class="btn sec" onclick="cancelPick()">취소</button></div>` : (can('order') ? '<button class="btn" onclick="startPick()">주문하기</button>' : '')}</div>
     ${orderPick ? '<div class="muted" style="margin-bottom:6px">주문할 품목을 체크한 뒤 "선택 품목 주문하기"를 누르세요.</div>' : ''}
-    ${r.rows.length ? `<div class="scroll"><table><tr>${orderPick ? `<th><input type="checkbox" ${allOn ? 'checked' : ''} onchange="pickAll(this.checked)"></th>` : ''}<th>번호</th><th>제품</th><th>수량</th><th>인원</th><th>금액</th></tr>${r.rows.map(p => `<tr>${orderPick ? `<td><input type="checkbox" ${orderSel.has(p.m.id) ? 'checked' : ''} onchange="pickOne('${p.m.id}',this.checked)"></td>` : ''}<td><span class="no">${no(p.m.id)}</span></td><td>${esc(p.m.name)}<div class="muted">${esc(p.m.unit)}</div></td><td>${p.qty}</td><td>${p.voters}</td><td>${p.m.price ? won(p.qty * p.m.price) : '-'}</td></tr>`).join('')}
-    <tr>${orderPick ? '<th></th>' : ''}<th></th><th>합계</th><th>${r.totalQty}</th><th></th><th>${won(r.totalPrice)}</th></tr></table></div>` : '<div class="muted">아직 투표가 없습니다.</div>'}</div>
-  <div class="card"><h2>참여자별</h2>${r.people.length ? `<div class="scroll"><table><tr><th>이름</th><th>선택</th><th>금액</th></tr>${r.people.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.parts.join(', '))}</td><td>${p.sum ? won(p.sum) : '-'}</td></tr>`).join('')}</table></div>` : '<div class="muted">-</div>'}
+    ${r.rows.length ? `<div class="scroll"><table class="t-prod"><tr>${orderPick ? `<th style="width:34px"><input type="checkbox" ${allOn ? 'checked' : ''} onchange="pickAll(this.checked)"></th>` : ''}<th style="width:44px">번호</th><th>제품</th><th style="width:64px;text-align:right">인원</th></tr>${r.rows.map(p => `<tr>${orderPick ? `<td><input type="checkbox" ${orderSel.has(p.m.id) ? 'checked' : ''} onchange="pickOne('${p.m.id}',this.checked)"></td>` : ''}<td><span class="no">${no(p.m.id)}</span></td><td>${esc(p.m.name)}<div class="muted">${esc(p.m.unit)}</div></td><td style="text-align:right"><b>${p.voters}</b>명</td></tr>`).join('')}</table></div>` : '<div class="muted">아직 투표가 없습니다.</div>'}</div>
+  <div class="card"><h2>참여자별</h2>${r.people.length ? `<div class="scroll"><table class="t-ppl"><colgroup><col style="width:30%"><col></colgroup><tr><th>이름</th><th>선택</th></tr>${r.people.map(p => `<tr><td class="pn">${esc(p.name)}</td><td>${p.parts.map(x => `<span class="pc">${esc(x)}</span>`).join('')}</td></tr>`).join('')}</table></div>` : '<div class="muted">-</div>'}
     ${r.non.length ? `<p class="muted">미참여: ${esc(r.non.join(', '))}</p>` : ''}</div>
   <div class="card"><h2>결과 공유</h2>
     <div class="row"><button class="btn" onclick="copyText()">텍스트 복사</button>${navigator.share ? '<button class="btn sec" onclick="shareText()">텍스트 공유</button>' : ''}
@@ -647,9 +655,9 @@ function drawCanvas() {
   const ctx = c.getContext('2d'); const rows = [];
   const wrap = (t, w, font) => { ctx.font = font; const out = []; let cur = ''; for (const ch of t) { if (ctx.measureText(cur + ch).width > w) { out.push(cur); cur = ch; } else cur += ch; } if (cur) out.push(cur); return out.length ? out : ['']; };
   rows.push({ k: 'h1', a: cfg.title + ' 투표 결과' }, { k: 'sub', a: `${fmtT(Date.now())} · 참여 ${r.people.length}명` }, { k: 'h2', a: '제품별' });
-  r.rows.forEach(p => rows.push({ k: 'row', a: p.m.name + (p.m.unit ? ` (${p.m.unit})` : ''), b: `${p.qty}개 ${p.m.price ? won(p.qty * p.m.price) : ''}` }));
+  r.rows.forEach(p => rows.push({ k: 'row', a: p.m.name + (p.m.unit ? ` (${p.m.unit})` : ''), b: `${p.voters}명` }));
   if (!r.rows.length) rows.push({ k: 'row', a: '(투표 없음)', b: '' });
-  rows.push({ k: 'sum', a: '합계', b: `${r.totalQty}개 · ${won(r.totalPrice)}` }, { k: 'h2', a: '참여자별' });
+  rows.push({ k: 'h2', a: '참여자별' });
   r.people.forEach(p => wrap(`${p.name}: ${p.parts.join(', ')}`, W - P * 2, '20px ' + F).forEach(ln => rows.push({ k: 'ppl', a: ln })));
   if (r.non.length) wrap('미참여: ' + r.non.join(', '), W - P * 2, '18px ' + F).forEach(ln => rows.push({ k: 'non', a: ln }));
   const H = { h1: 60, sub: 34, h2: 50, row: 34, sum: 46, ppl: 30, non: 28 };
@@ -856,9 +864,10 @@ function orderTotals() {
   order.items.forEach(x => { if (!x.inc) return; cnt++; if (x.done) done++; goods += (Number(x.price) || 0) * (Number(x.qty) || 0); if (x.ship) ship += Number(x.fee) || 0; });
   return { goods, ship, total: goods + ship, cnt, done };
 }
+const payOn = v => v.voted ? !(order.pay.excl || []).includes(v.key) : (order.pay.incl || []).includes(v.key);
 function payInfo() {
   const t = orderTotals(), P = order.pay;
-  const n = orderVoters.filter(v => !P.excl.includes(v.key)).length;
+  const n = orderVoters.filter(payOn).length;
   const sub = P.subsidyOn ? (Number(P.subsidy) || 0) : 0, settle = Math.max(0, t.total - sub), per = n ? Math.ceil(settle / n) : 0;
   return { ...t, n, sub, settle, per, diff: per * n - settle };
 }
@@ -884,7 +893,7 @@ function drawOrder() {
   ${order.items.length ? order.items.map(orderCard).join('') : '<div class="card muted">주문 목록이 비어 있습니다. "결과 보기"에서 "주문하기"를 눌러 품목을 담아 주세요.</div>'}
   <div class="card" id="o-sum"></div>
   <div class="card"><h2>비용 계산</h2>
-    <div class="muted">정산에 포함할 참여자를 눌러 선택하세요. 선택된 인원으로 나눕니다.</div>
+    <div class="muted">정산에 포함할 사람을 눌러 선택하세요. 투표하지 않은 명단도 선택하면 1/n 인원에 포함됩니다.</div>
     <div class="row" style="margin:8px 0" id="pay-chips"></div>
     <div class="row" style="margin-bottom:8px"><button class="btn sec sm" onclick="payAll(true)">전체 선택</button><button class="btn sec sm" onclick="payAll(false)">전체 해제</button></div>
     <div class="row"><label class="row" style="gap:4px"><input type="checkbox" ${P.subsidyOn ? 'checked' : ''} onchange="paySet('subsidyOn',this.checked)"> 지원금 있음</label>
@@ -902,7 +911,10 @@ function refreshOrderUI() {
     <div class="row" style="justify-content:space-between"><span>배송비 합계</span><b>${won(p.ship)}</b></div>
     <div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:6px;margin-top:6px"><span>총 금액</span><span class="bigsum">${won(p.total)}</span></div>
     <div class="muted" style="margin-top:4px">합계에 포함된 ${p.cnt}개 품목 중 주문 완료 ${p.done}개</div>`;
-  $('#pay-chips').innerHTML = orderVoters.length ? orderVoters.map((v, i) => `<button class="payer ${order.pay.excl.includes(v.key) ? '' : 'on'}" onclick="payToggle(${i})">${esc(v.name)}</button>`).join('') : '<span class="muted">투표 참여자가 없습니다.</span>';
+  const chip = (v, i) => `<button class="payer ${v.voted ? '' : 'no'} ${payOn(v) ? 'on' : ''}" onclick="payToggle(${i})">${esc(v.name)}</button>`;
+  const vi = orderVoters.map((v, i) => [v, i]), a1 = vi.filter(x => x[0].voted), a2 = vi.filter(x => !x[0].voted);
+  $('#pay-chips').innerHTML = (a1.length ? `<div class="pgl">투표 참여</div>` + a1.map(x => chip(...x)).join('') : '<span class="muted">투표 참여자가 없습니다.</span>')
+    + (a2.length ? `<div class="pgl">투표하지 않은 명단 (선택하면 1/n에 포함)</div>` + a2.map(x => chip(...x)).join('') : '');
   $('#pay-res').innerHTML = `
     <div class="row" style="justify-content:space-between"><span>총 금액</span><b>${won(p.total)}</b></div>
     ${order.pay.subsidyOn ? `<div class="row" style="justify-content:space-between"><span>지원금</span><b>− ${won(p.sub)}</b></div>` : ''}
@@ -924,8 +936,12 @@ function paySet(k, v) {
   if (k === 'subsidyOn') { const e = $('#sub-amt'); if (e) e.style.display = v ? 'block' : 'none'; }
   refreshOrderUI(); scheduleSave();
 }
-function payToggle(n) { const key = orderVoters[n].key, a = order.pay.excl, i = a.indexOf(key); if (i >= 0) a.splice(i, 1); else a.push(key); refreshOrderUI(); scheduleSave(); }
-function payAll(on) { order.pay.excl = on ? [] : orderVoters.map(v => v.key); refreshOrderUI(); scheduleSave(); }
+function payToggle(n) {
+  const v = orderVoters[n], P = order.pay; P.excl = P.excl || []; P.incl = P.incl || [];
+  const a = v.voted ? P.excl : P.incl, i = a.indexOf(v.key); if (i >= 0) a.splice(i, 1); else a.push(v.key);
+  refreshOrderUI(); scheduleSave();
+}
+function payAll(on) { const P = order.pay; P.excl = on ? [] : orderVoters.filter(v => v.voted).map(v => v.key); P.incl = on ? orderVoters.filter(v => !v.voted).map(v => v.key) : []; refreshOrderUI(); scheduleSave(); }
 function scheduleSave() { const e = $('#o-save'); if (e) e.textContent = '저장 중…'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { saveTimer = null; try { await saveOrder(); const e2 = $('#o-save'); if (e2) e2.textContent = '저장됨'; } catch (er) { const e2 = $('#o-save'); if (e2) e2.textContent = '저장 실패'; toast(er.message); } }, 700); }
 async function saveOrder() { await call('orderSave', { order }); }
 async function clearOrder() { if (!confirm('주문 목록과 정산 설정을 모두 비울까요?')) return; try { await call('orderClear'); await renderOrder(); } catch (e) { toast(e.message); } }
@@ -933,7 +949,7 @@ async function copyPay() {
   const p = payInfo(), L = [`[${cfg.title}] 정산 안내`, `총 금액 ${won(p.total)} (상품 ${won(p.goods)} + 배송비 ${won(p.ship)})`];
   if (order.pay.subsidyOn) L.push(`지원금 ${won(p.sub)}`);
   L.push(`정산 금액 ${won(p.settle)} ÷ ${p.n}명 = 1인당 ${p.n ? won(p.per) : '-'}`);
-  const names = orderVoters.filter(v => !order.pay.excl.includes(v.key)).map(v => v.name); if (names.length) L.push('정산 대상: ' + names.join(', '));
+  const names = orderVoters.filter(payOn).map(v => v.name); if (names.length) L.push('정산 대상: ' + names.join(', '));
   try { await navigator.clipboard.writeText(L.join('\n')); toast('복사했습니다'); } catch { toast('복사 실패'); }
 }
 
