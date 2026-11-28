@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#3b6cf6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Snack Poll v1.37</title>
+<title>Snack Poll v1.38</title>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--ink:#1d2433;--sub:#6b7488;--line:#e3e7ef;--acc:#3b6cf6;--acc2:#e8eeff;--ok:#1f9d63;--bad:#d64545;--warn:#b7791f}
 *{box-sizing:border-box}
@@ -232,9 +232,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 .num{position:relative;flex:none}
 .num input{height:32px!important;min-height:32px!important;padding:2px 22px 2px 8px!important;font-size:16px;text-align:right;border:1px solid var(--line);border-radius:8px;background:#fbfcfe;box-sizing:border-box}
 .num i{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-style:normal;font-size:12px;color:var(--sub);pointer-events:none}
-.num.pr input{width:104px}
-.num.qt input{width:64px}
-.num.fee input{width:104px}
 .oline{display:flex;align-items:center;gap:6px}
 .oline .mid{color:var(--sub);font-size:13px}
 .oline .sumv{margin-left:auto;min-height:0;display:block;font-size:15px;white-space:nowrap}
@@ -245,6 +242,21 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 .oi .pick.sm{width:18px;height:18px}
 .oi .no{min-width:22px;height:22px;line-height:22px;font-size:12px}
 .oi .lk{font-size:12px;padding:2px}
+
+.num input{height:30px!important;min-height:30px!important;font-size:14px;box-sizing:border-box}
+.oline{display:flex;align-items:center;gap:6px}
+.oline2{display:flex;align-items:center;gap:8px;margin-top:6px}
+.odone{margin-left:auto}
+.oline .o2,.oline .o6{color:var(--sub)}
+@media (min-width:521px){
+  .obody{display:flex;align-items:center;gap:8px}
+  .obody .oline,.obody .oline2{display:contents;margin:0}
+  .o1{order:1}.o2{order:2}.o3{order:3}.o4{order:4;margin-left:6px}.o5{order:5}.o6{order:6}.o7{order:7;margin-left:auto!important}.o8{order:8;margin-left:14px!important}
+}
+@media (max-width:520px){
+  .num input{font-size:16px}
+  .oline .sumv{margin-left:auto}
+}
 </style>
 </head>
 <body>
@@ -253,14 +265,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 <div id="modalRoot"></div>
 
 <script>
-const VERSION = 'v1.37';
+const VERSION = 'v1.38';
 const _AE = 'jVGel9ydldzVBRkStdGbBVzakh2dVRmQlpXd4FlelVWOVhkYtd1dzoUMIZza5Qnd4UlVqp1M1dWLQh1cZRXVnpkQ3cUN4J2Y5Z2SB9ycvM3byNWYt9SbvNmLlx2Zv92ZuQHcpJ3Yz9yL6MHc0RHa';
 const _dec = e => { try { return decodeURIComponent(escape(atob(e.split('').reverse().join('')))); } catch (x) { return ''; } };
 const _enc = u => btoa(unescape(encodeURIComponent(u))).split('').reverse().join('');
 const maskApi = u => u ? u.replace(/(\/s\/)(.{4}).*(.{4})(\/exec)/, '$1$2••••••••$3$4') : '';
 const DEFAULT_API_URL = _dec(_AE);
 
-let liveOpen = false, liveData = null, orderPick = false, orderSel = new Set(), order = null, orderVoters = [], saveTimer = null;
+let liveOpen = false, liveData = null, orderPick = false, orderSel = new Set(), order = null, orderVoters = [], orderVotes = null, saveTimer = null;
 let API = (localStorage.getItem('vw_api') || DEFAULT_API_URL).trim();
 let cfg = { title: 'Snack Poll', mode: 'list' }, menus = [], myVote = null, me = null;
 let votes = [], resUsers = [], userList = [];
@@ -954,7 +966,7 @@ async function bulkNames() {
 
 async function renderOrder() {
   if (!$('#main')) return;
-  try { const j = await call('orderGet'); order = j.order; orderVoters = j.voters; } catch (e) { return; }
+  try { const j = await call('orderGet'); order = j.order; orderVoters = j.voters; orderVotes = j.votes || null; } catch (e) { return; }
   drawOrder();
 }
 const menuNo = id => { const i = menus.findIndex(m => m.id === id); return i < 0 ? '-' : i + 1; };
@@ -982,7 +994,8 @@ function moneyFmt(el) {
   let c = 0, p = 0; if (digitsBefore) { for (; p < el.value.length; p++) { if (/\d/.test(el.value[p])) c++; if (c === digitsBefore) { p++; break; } } } try { el.setSelectionRange(p, p); } catch (e) {}
   return Number(raw) || 0;
 }
-function oMoney(i, k, el) { oSet(i, k, moneyFmt(el)); }
+const aw = (v, m) => `calc(${Math.max(String(v).length, m)}ch + 32px)`;
+function oMoney(i, k, el) { oSet(i, k, moneyFmt(el)); el.style.width = aw(el.value, 3); }
 function orderCard(x, i) {
   const closed = !!menuFold['oi_' + x.id];
   return `<div class="card fold oi ord ${x.done ? 'done' : ''} ${closed ? 'closed' : ''}" id="o-${i}">
@@ -993,16 +1006,16 @@ function orderCard(x, i) {
       ${x.link ? `<a class="lk" href="${esc(x.link)}" target="_blank" rel="noopener">사이트 ↗</a>` : ''}
       <button class="ib bad sm" title="삭제" aria-label="삭제" onclick="oDel(${i})">✕</button>
       <button class="ib sm chevb" aria-label="접기/펼치기" onclick="oFold(${i})"><span class="chev">▾</span></button></div>
-    <div class="fb">
+    <div class="fb obody">
       <div class="oline">
-        <div class="num pr"><input type="text" inputmode="numeric" aria-label="가격" value="${fmtN(x.price)}" placeholder="0" oninput="oMoney(${i},'price',this)"><i>원</i></div>
-        <span class="mid">×</span>
-        <div class="num qt"><input type="number" min="0" inputmode="numeric" aria-label="수량" value="${x.qty}" oninput="oSet(${i},'qty',this.value)"><i>개</i></div>
-        <span class="mid">=</span><b class="sumv" id="ol-${i}">-</b></div>
+        <div class="num pr o1"><input type="text" inputmode="numeric" aria-label="가격" value="${fmtN(x.price)}" placeholder="0" style="width:${aw(fmtN(x.price), 3)}" oninput="oMoney(${i},'price',this)"><i>원</i></div>
+        <span class="mid o2">×</span>
+        <div class="num qt o3"><input type="number" min="0" inputmode="numeric" aria-label="수량" value="${x.qty}" style="width:${aw(x.qty, 1)}" oninput="oSet(${i},'qty',this.value);this.style.width=aw(this.value,1)"><i>개</i></div>
+        <span class="mid o6">=</span><b class="sumv o7" id="ol-${i}">-</b></div>
       <div class="oline2">
-        <label class="chk"><input type="checkbox" class="pick sm" ${x.ship ? 'checked' : ''} onchange="oSet(${i},'ship',this.checked)"> 배송비</label>
-        <div class="num fee" id="ofw-${i}" style="display:${x.ship ? 'block' : 'none'}"><input type="text" inputmode="numeric" aria-label="배송비" value="${fmtN(x.fee)}" placeholder="0" oninput="oMoney(${i},'fee',this)"><i>원</i></div>
-        <label class="chk" style="margin-left:auto"><input type="checkbox" class="pick sm" ${x.done ? 'checked' : ''} onchange="oSet(${i},'done',this.checked)"> 주문 완료</label></div></div></div>`;
+        <label class="chk o4"><input type="checkbox" class="pick sm" ${x.ship ? 'checked' : ''} onchange="oSet(${i},'ship',this.checked)"> 배송비</label>
+        <div class="num fee o5" id="ofw-${i}" style="display:${x.ship ? 'block' : 'none'}"><input type="text" inputmode="numeric" aria-label="배송비" value="${fmtN(x.fee)}" placeholder="0" style="width:${aw(fmtN(x.fee), 3)}" oninput="oMoney(${i},'fee',this)"><i>원</i></div>
+        <label class="chk o8 odone"><input type="checkbox" class="pick sm" ${x.done ? 'checked' : ''} onchange="oSet(${i},'done',this.checked)"> 주문 완료</label></div></div></div>`;
 }
 function oFold(i) { const x = order.items[i]; if (!x) return; const k = 'oi_' + x.id; menuFold[k] = !menuFold[k]; saveFold(); const c = $('#o-' + i); if (c) c.classList.toggle('closed', !!menuFold[k]); }
 const O_KEYS = ['o_sum', 'o_pre', 'o_pay', 'o_method', 'o_paid', 'o_share'];
@@ -1046,7 +1059,7 @@ function drawOrder() {
 }
 function refreshOrderUI() {
   if (!order || !$('#o-sum-b')) return;
-  order.items.forEach((x, i) => { const sub = (Number(x.price) || 0) * (Number(x.qty) || 0) + (x.ship ? Number(x.fee) || 0 : 0), e = $('#ol-' + i), o = $('#os-' + i); if (e) e.textContent = won(sub); if (o) o.textContent = `· ${won(Number(x.price) || 0)} × ${Number(x.qty) || 0} = ${won(sub)}`; });
+  order.items.forEach((x, i) => { const sub = (Number(x.price) || 0) * (Number(x.qty) || 0) + (x.ship ? Number(x.fee) || 0 : 0), e = $('#ol-' + i), o = $('#os-' + i); if (e) e.textContent = won(sub); if (o) o.textContent = `· ${won(Number(x.price) || 0)} × ${Number(x.qty) || 0}${x.ship && Number(x.fee) ? ' + 배송비 ' + won(Number(x.fee)) : ''} = ${won(sub)}`; });
   const p = payInfo();
   $('#o-sum-b').innerHTML = `
     <div class="row" style="justify-content:space-between"><span>상품 합계</span><b>${won(p.goods)}</b></div>
@@ -1099,30 +1112,52 @@ async function clearOrder() { if (!confirm('주문 목록과 정산 설정을 �
 let payImgOn = false, preImgOn = false;
 function togglePreImg(keep) { const on = keep === true ? true : $('#preImg').checked; preImgOn = on; const b = $('#preBox'); if (b) b.style.display = on ? 'block' : 'none'; if (on) drawPreCanvas(); }
 function preLines() {
-  const its = order.items.filter(x => x.inc), sub = x => (Number(x.price) || 0) * (Number(x.qty) || 0), L = [];
-  its.forEach(x => { L.push({ a: `${menuNo(x.id)}. ${x.name}${x.unit ? ' (' + x.unit + ')' : ''} × ${Number(x.qty) || 0}`, b: won(sub(x)) }); if (x.ship && Number(x.fee)) L.push({ a: `   배송비 · ${x.name}`, b: won(Number(x.fee)) }); });
-  return { L, total: orderTotals().total, n: its.length };
+  const its = order.items.filter(x => x.inc).map((x, idx) => ({ x, idx, v: orderVotes ? (orderVotes[x.id] || 0) : 0 }));
+  its.sort((a, b) => b.v - a.v || a.idx - b.idx);
+  const L = its.map((o, k) => {
+    const x = o.x, price = Number(x.price) || 0, qty = Number(x.qty) || 0;
+    return { rank: orderVotes ? 1 + its.filter(z => z.v > o.v).length : k + 1, name: x.name, unit: x.unit || '', price, qty, goods: price * qty, fee: x.ship ? Number(x.fee) || 0 : 0, votes: o.v };
+  });
+  const goods = L.reduce((t, x) => t + x.goods, 0), ship = L.reduce((t, x) => t + x.fee, 0);
+  return { L, goods, ship, total: goods + ship, n: L.length };
 }
 function drawPreCanvas() {
   const c = $('#prc'); if (!c || !order) return;
-  const W = 720, P = 30, F = '"Apple SD Gothic Neo","Malgun Gothic",sans-serif', ctx = c.getContext('2d'), pre = preLines(), rows = [];
-  rows.push({ k: 'h1', a: cfg.title + ' 주문 내역' }, { k: 'sub', a: fmtT(Date.now()) + ' · ' + pre.n + '개 품목' });
-  if (!pre.L.length) rows.push({ k: 'sub', a: '담긴 품목이 없습니다' });
-  pre.L.forEach(x => rows.push({ k: 'row', a: x.a, b: x.b }));
-  rows.push({ k: 'big', a: '총 금액', b: won(pre.total) });
-  const H = { h1: 60, sub: 34, row: 36, big: 64 };
-  c.width = W; c.height = P * 2 + rows.reduce((t, x) => t + H[x.k], 0);
+  const W = 720, P = 32, F = '"Apple SD Gothic Neo","Malgun Gothic",sans-serif', ctx = c.getContext('2d'), pre = preLines(), rows = [];
+  const ORG = '#e8590c';
+  rows.push({ k: 'head' });
+  if (!pre.L.length) rows.push({ k: 'none' });
+  pre.L.forEach(x => { rows.push({ k: 'item', x }); if (x.fee) rows.push({ k: 'ship', x }); });
+  rows.push({ k: 'gap' }, { k: 'tot', a: '상품 합계', b: won(pre.goods) }, { k: 'tot', a: '배송비 합계', b: won(pre.ship), o: true }, { k: 'big', a: '총 금액', b: won(pre.total) });
+  const H = { head: 112, none: 60, item: 64, ship: 32, gap: 14, tot: 36, big: 70 };
+  c.width = W; c.height = rows.reduce((t, x) => t + H[x.k], 0) + 24;
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
-  let y = P;
-  rows.forEach(x => {
-    const h = H[x.k], base = y + h - 10; ctx.textAlign = 'left';
-    if (x.k === 'h1') { ctx.fillStyle = '#1d2433'; ctx.font = 'bold 32px ' + F; ctx.fillText(x.a, P, base); }
-    else if (x.k === 'sub') { ctx.fillStyle = '#6b7488'; ctx.font = '18px ' + F; ctx.fillText(x.a, P, base); }
-    else {
-      const big = x.k === 'big'; ctx.fillStyle = big ? '#3b6cf6' : '#1d2433'; ctx.font = (big ? 'bold 30px ' : '20px ') + F;
-      const bw = ctx.measureText(x.b).width; let a = x.a; while (ctx.measureText(a).width > W - P * 2 - bw - 20 && a.length > 1) a = a.slice(0, -1); if (a !== x.a) a += '…';
-      ctx.fillText(a, P, base); ctx.textAlign = 'right'; ctx.fillText(x.b, W - P, base);
-      ctx.strokeStyle = '#e3e7ef'; ctx.beginPath(); ctx.moveTo(P, y + h - 2); ctx.lineTo(W - P, y + h - 2); ctx.stroke();
+  const fit = (t, w, font) => { ctx.font = font; let a = t; while (ctx.measureText(a).width > w && a.length > 1) a = a.slice(0, -1); return a === t ? a : a + '…'; };
+  let y = 0;
+  rows.forEach(r => {
+    const h = H[r.k]; ctx.textAlign = 'left';
+    if (r.k === 'head') {
+      ctx.fillStyle = '#3b6cf6'; ctx.fillRect(0, 0, W, h);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 34px ' + F; ctx.fillText(fit(cfg.title + ' 주문 내역', W - P * 2, 'bold 34px ' + F), P, 54);
+      ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = '18px ' + F; ctx.fillText(`${fmtT(Date.now())} · ${pre.n}개 품목 · 투표 순위순`, P, 90);
+    } else if (r.k === 'none') { ctx.fillStyle = '#6b7488'; ctx.font = '20px ' + F; ctx.fillText('담긴 품목이 없습니다', P, y + 38); }
+    else if (r.k === 'item') {
+      const x = r.x, amt = won(x.goods);
+      ctx.fillStyle = '#eaf0ff'; ctx.beginPath(); ctx.arc(P + 17, y + 30, 17, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#3b6cf6'; ctx.font = 'bold 19px ' + F; ctx.textAlign = 'center'; ctx.fillText(String(x.rank), P + 17, y + 37);
+      ctx.textAlign = 'right'; ctx.fillStyle = '#1d2433'; ctx.font = 'bold 24px ' + F; ctx.fillText(amt, W - P, y + 36);
+      const aw2 = ctx.measureText(amt).width; ctx.textAlign = 'left';
+      ctx.fillStyle = '#1d2433'; ctx.fillText(fit(x.name, W - P * 2 - 50 - aw2 - 14, 'bold 24px ' + F), P + 48, y + 36);
+      ctx.fillStyle = '#8a93a6'; ctx.font = '16px ' + F; ctx.fillText(`${x.unit ? x.unit + ' · ' : ''}${won(x.price)} × ${x.qty}`, P + 48, y + 57);
+      if (!rows[rows.indexOf(r) + 1] || rows[rows.indexOf(r) + 1].k !== 'ship') { ctx.strokeStyle = '#e8ecf3'; ctx.beginPath(); ctx.moveTo(P, y + h - 1); ctx.lineTo(W - P, y + h - 1); ctx.stroke(); }
+    } else if (r.k === 'ship') {
+      ctx.fillStyle = ORG; ctx.font = '18px ' + F; ctx.fillText('배송비', P + 48, y + 22); ctx.textAlign = 'right'; ctx.fillText('+ ' + won(r.x.fee), W - P, y + 22);
+      ctx.strokeStyle = '#e8ecf3'; ctx.beginPath(); ctx.moveTo(P, y + h - 1); ctx.lineTo(W - P, y + h - 1); ctx.stroke();
+    } else if (r.k === 'tot') {
+      ctx.fillStyle = r.o ? ORG : '#4a5368'; ctx.font = '20px ' + F; ctx.fillText(r.a, P, y + 26); ctx.textAlign = 'right'; ctx.font = 'bold 20px ' + F; ctx.fillText(r.b, W - P, y + 26);
+    } else if (r.k === 'big') {
+      ctx.fillStyle = '#f2f6ff'; ctx.fillRect(0, y, W, h);
+      ctx.fillStyle = '#1d2433'; ctx.font = 'bold 24px ' + F; ctx.fillText(r.a, P, y + 44); ctx.fillStyle = '#3b6cf6'; ctx.textAlign = 'right'; ctx.font = 'bold 34px ' + F; ctx.fillText(r.b, W - P, y + 46);
     }
     y += h;
   });
@@ -1131,7 +1166,9 @@ const cvBlob = id => new Promise(res => $('#' + id).toBlob(res, 'image/png'));
 async function cvSave(id, nm) { const b = await cvBlob(id), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `${cfg.title}_${nm}_${new Date().toISOString().slice(0, 10)}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); }
 async function cvShare(id, nm) { const b = await cvBlob(id), f = new File([b], nm + '.png', { type: 'image/png' }); if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: cfg.title }); } catch {} } else cvSave(id, nm); }
 async function copyPre() {
-  const pre = preLines(), L = [`[${cfg.title}] 주문 내역 (${fmtT(Date.now())})`, ...pre.L.map(x => `${x.a.trim()}  ${x.b}`), `총 금액 ${won(pre.total)}`];
+  const pre = preLines(), L = [`[${cfg.title}] 주문 내역 (${fmtT(Date.now())})`, '투표 순위순', ''];
+  pre.L.forEach(x => { L.push(`${x.rank}. ${x.name}${x.unit ? ' (' + x.unit + ')' : ''}  ${won(x.goods)}`, `    ${won(x.price)} × ${x.qty}`); if (x.fee) L.push(`    배송비 + ${won(x.fee)}`); });
+  L.push('', `상품 합계 ${won(pre.goods)}`, `배송비 합계 ${won(pre.ship)}`, `총 금액 ${won(pre.total)}`);
   try { await navigator.clipboard.writeText(L.join('\n')); toast('복사했습니다'); } catch { toast('복사 실패'); }
 }
 function togglePayImg(keep) { const on = keep === true ? true : $('#payImg').checked; payImgOn = on; const b = $('#payBox'); if (b) b.style.display = on ? 'block' : 'none'; if (on) drawPayCanvas(); }
