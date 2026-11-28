@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#3b6cf6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Snack Poll v1.34</title>
+<title>Snack Poll v1.36</title>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--ink:#1d2433;--sub:#6b7488;--line:#e3e7ef;--acc:#3b6cf6;--acc2:#e8eeff;--ok:#1f9d63;--bad:#d64545;--warn:#b7791f}
 *{box-sizing:border-box}
@@ -204,6 +204,24 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 .prow .pn2{flex:1;font-weight:600}
 .prow.ok{color:var(--sub)}
 .prow.ok .pn2{text-decoration:line-through}
+
+.oi .oh{display:flex;align-items:center;gap:8px}
+.oi .onm{flex:1;min-width:0;cursor:pointer}
+.oi .onm b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.oi .osub{display:block;font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.oi .lk{font-size:12px;font-weight:700;color:var(--acc);text-decoration:none;white-space:nowrap;padding:4px 2px}
+.oi .ib{width:30px;height:30px;min-height:30px;font-size:13px}
+.oi .chevb .chev{display:inline-block;transition:transform .2s}
+.oi.closed .chevb .chev{transform:rotate(-90deg)}
+.oi.closed .fb{display:none}
+.oi.card{padding:10px 12px}
+.oi .pick.sm{width:20px;height:20px}
+.oi .sumv{min-height:38px;display:flex;align-items:center;font-weight:700;font-size:15px}
+.ff .fld input[type=number]{min-width:0}
+.card.em{border-left:4px solid var(--acc)}
+.card.em .fh h2{color:var(--acc);font-size:18px}
+.paymsg{margin-top:10px;font-weight:700;font-size:15px;line-height:1.5}
+.paymsg:empty{display:none}
 </style>
 </head>
 <body>
@@ -212,7 +230,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 <div id="modalRoot"></div>
 
 <script>
-const VERSION = 'v1.34';
+const VERSION = 'v1.36';
 const _AE = 'jVGel9ydldzVBRkStdGbBVzakh2dVRmQlpXd4FlelVWOVhkYtd1dzoUMIZza5Qnd4UlVqp1M1dWLQh1cZRXVnpkQ3cUN4J2Y5Z2SB9ycvM3byNWYt9SbvNmLlx2Zv92ZuQHcpJ3Yz9yL6MHc0RHa';
 const _dec = e => { try { return decodeURIComponent(escape(atob(e.split('').reverse().join('')))); } catch (x) { return ''; } };
 const _enc = u => btoa(unescape(encodeURIComponent(u))).split('').reverse().join('');
@@ -477,8 +495,8 @@ async function submitVote() {
 let menuFold = (() => { try { return JSON.parse(localStorage.getItem('sp_fold')) || {}; } catch (e) { return {}; } })();
 const FOLD_KEYS = ['opts', 'item', 'blink', 'bname', 'list'];
 function saveFold() { try { localStorage.setItem('sp_fold', JSON.stringify(menuFold)); } catch (e) {} }
-function foldCard(k, title, body) {
-  return `<div class="card fold ${menuFold[k] ? 'closed' : ''}" id="fc-${k}"><div class="fh" onclick="foldToggle('${k}')"><h2>${title}</h2><span class="chev">▾</span></div><div class="fb" style="margin-top:10px">${body}</div></div>`;
+function foldCard(k, title, body, cls = '') {
+  return `<div class="card fold ${cls} ${menuFold[k] ? 'closed' : ''}" id="fc-${k}"><div class="fh" onclick="foldToggle('${k}')"><h2>${title}</h2><span class="chev">▾</span></div><div class="fb" style="margin-top:10px">${body}</div></div>`;
 }
 function foldToggle(k) { menuFold[k] = !menuFold[k]; saveFold(); const c = $('#fc-' + k); if (c) c.classList.toggle('closed', !!menuFold[k]); }
 function foldAll(closed) { FOLD_KEYS.forEach(k => menuFold[k] = closed); saveFold(); renderMenu(); }
@@ -695,7 +713,7 @@ async function shareImg() {
   if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: cfg.title }); } catch {} } else saveImg();
 }
 
-const SET_KEYS = ['s_basic', 's_perm', 's_users', 's_logs', 's_backup', 's_conn'];
+const SET_KEYS = ['s_basic', 's_perm', 's_users', 's_logs', 's_order', 's_backup', 's_conn'];
 function foldAllS(closed) { SET_KEYS.forEach(k => menuFold[k] = closed); saveFold(); renderSettings(); }
 async function renderSettings() {
   let h = `<div class="pagehead"><h2 style="margin:6px 0">설정</h2></div><div class="foldbar" style="margin:0 0 4px"><button class="btn sec sm" onclick="foldAllS(false)">모두 펼치기</button><button class="btn sec sm" onclick="foldAllS(true)">모두 접기</button></div>`;
@@ -741,6 +759,10 @@ async function renderSettings() {
       <div class="scroll"><table><tr><th>시간</th><th>이름</th><th>내용</th></tr>${lg.map(l => `<tr><td class="nw">${fmtT(l.t)}</td><td>${esc(l.name)}</td><td>${esc(l.ev)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">기록 없음</td></tr>'}</table></div>`);
     }
   } catch (e) { return; }
+  if (can('order')) h += foldCard('s_order', '주문 내역 내보내기 / 불러오기', `
+    <p class="muted">주문 목록(품목·수량·가격·배송비·주문 완료)과 정산 설정(정산 인원, 지원금, 정산 방법, 입금 확인)을 JSON 파일로 저장하거나 불러옵니다. 불러오면 현재 주문 내역이 파일 내용으로 바뀝니다.</p>
+    <div class="row"><button class="btn sec sm" onclick="exportOrder()">내보내기</button><button class="btn sec sm" onclick="document.getElementById('ord-file').click()">불러오기</button></div>
+    <input type="file" id="ord-file" accept=".json,application/json" style="display:none" onchange="importOrder(this)">`);
   if (me.role === 'admin') h += foldCard('s_backup', '설정 내보내기 / 불러오기', `
     <p class="muted">페이지 설정, 투표 옵션, 매니저 권한, 계정 명단(이름·권한)을 파일로 저장하거나 불러옵니다. 비밀번호와 투표 내용은 포함되지 않으며, 제품 목록은 등록 화면에서 따로 내보냅니다.</p>
     <div class="row"><button class="btn sec sm" onclick="exportSettings()">내보내기</button><button class="btn sec sm" onclick="document.getElementById('set-file').click()">불러오기</button></div>
@@ -757,6 +779,21 @@ async function saveBasic() {
     await call('basicSave', { title: $('#s-title').value.trim(), mode: $('#s-mode').value, code: $('#s-code') ? $('#s-code').value.trim() : cfg.code, showQty: $('#s-showqty').checked, showPrice: $('#s-showprice').checked, showTotal: $('#s-showtotal').checked, showBulkLink: $('#s-bulklink').checked, showBulkName: $('#s-bulkname').checked });
     await loadState(); toast('저장했습니다'); shell();
   } catch (e) { toast(e.message); }
+}
+async function exportOrder() {
+  try {
+    const j = await call('orderGet'), data = { app: 'snack-poll-order', ver: VERSION, at: new Date().toISOString(), title: cfg.title, order: j.order };
+    const b = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = `SnackPoll_주문내역_${new Date().toISOString().slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    toast(`내보냈습니다 · ${j.order.items.length}개 품목`);
+  } catch (e) { toast(e.message); }
+}
+async function importOrder(inp) {
+  const file = inp.files[0]; inp.value = ''; if (!file) return;
+  let d; try { d = JSON.parse(await file.text()); } catch (e) { return toast('주문 내역 파일을 읽을 수 없습니다'); }
+  if (!d || d.app !== 'snack-poll-order' || !d.order || !Array.isArray(d.order.items)) return toast('Snack Poll 주문 내역 파일이 아닙니다');
+  if (!confirm(`주문 내역을 불러올까요?\n현재 주문 목록과 정산 설정이 파일 내용(${d.order.items.length}개 품목)으로 바뀝니다.`)) return;
+  try { await call('orderSave', { order: d.order }); toast('불러왔습니다'); } catch (e) { toast(e.message); }
 }
 async function exportSettings() {
   try {
@@ -904,7 +941,7 @@ function orderTotals() {
   return { goods, ship, total: goods + ship, cnt, done };
 }
 const payTarget = () => { const P = order.pay; if (P.method === 'account') return [P.bank, P.acct, P.holder].map(x => String(x || '').trim()).filter(Boolean).join(' '); if (P.method === 'kakao') { const n = String(P.kname || '').trim(); return n ? '카카오페이 ' + n : ''; } return ''; };
-const paySentence = () => { const t = payTarget(); return t ? t + '(으)로 보내주시기 바랍니다.' : ''; };
+const paySentence = () => { const P = order.pay; if (P.method === 'kakao') { const n = String(P.kname || '').trim(); return n ? `${n}의 카카오페이로 보내 주시기 바랍니다.` : ''; } const t = payTarget(); return t ? `${t}(으)로 보내 주시기 바랍니다.` : ''; };
 const chunk5 = a => { const o = []; for (let i = 0; i < a.length; i += 5) o.push(a.slice(i, i + 5)); return o; };
 function payMethod(m) { order.pay.method = order.pay.method === m ? '' : m; scheduleSave(); drawOrder(); }
 function payPaid(n) { const v = orderVoters[n], P = order.pay; P.paid = P.paid || []; const i = P.paid.indexOf(v.key); if (i >= 0) P.paid.splice(i, 1); else P.paid.push(v.key); refreshOrderUI(); scheduleSave(); }
@@ -916,53 +953,70 @@ function payInfo() {
   return { ...t, n, sub, settle, per, diff: per * n - settle };
 }
 function orderCard(x, i) {
-  return `<div class="card ord ${x.done ? 'done' : ''}" id="o-${i}">
-    <div class="row" style="justify-content:space-between">
-      <div class="row"><input type="checkbox" class="pick" title="합계에 포함" ${x.inc ? 'checked' : ''} onchange="oSet(${i},'inc',this.checked)"><span class="no">${menuNo(x.id)}</span><span class="nm">${esc(x.name)}</span><span class="muted">${esc(x.unit)}</span><span class="chip" id="od-${i}" style="display:${x.done ? 'inline-flex' : 'none'}">✔ 주문 완료</span></div>
-      <div class="row">${x.link ? `<a class="btn sec sm" href="${esc(x.link)}" target="_blank" rel="noopener">사이트 열기</a>` : '<span class="muted">링크 없음</span>'}<button class="btn bad sm" onclick="oDel(${i})">삭제</button></div></div>
-    <div class="grid" style="margin-top:8px">
-      <div><label class="f">가격(원)</label><input type="number" min="0" value="${x.price}" oninput="oSet(${i},'price',this.value)"></div>
-      <div><label class="f">수량</label><input type="number" min="0" value="${x.qty}" oninput="oSet(${i},'qty',this.value)"></div>
-      <div><label class="f">소계 (배송비 포함)</label><div class="nm" id="ol-${i}">-</div></div></div>
-    <div class="row" style="margin-top:8px">
-      <label class="row" style="gap:4px"><input type="checkbox" ${x.ship ? 'checked' : ''} onchange="oSet(${i},'ship',this.checked)"> 배송비</label>
-      <input type="number" min="0" id="of-${i}" value="${x.fee || ''}" placeholder="배송비 입력(원)" style="width:150px;display:${x.ship ? 'block' : 'none'}" oninput="oSet(${i},'fee',this.value)">
-      <label class="row" style="gap:4px;margin-left:auto"><input type="checkbox" ${x.done ? 'checked' : ''} onchange="oSet(${i},'done',this.checked)"> 주문 완료</label></div></div>`;
+  const closed = !!menuFold['oi_' + x.id];
+  return `<div class="card fold oi ord ${x.done ? 'done' : ''} ${closed ? 'closed' : ''}" id="o-${i}">
+    <div class="oh">
+      <input type="checkbox" class="pick" title="합계에 포함" ${x.inc ? 'checked' : ''} onchange="oSet(${i},'inc',this.checked)">
+      <span class="no">${menuNo(x.id)}</span>
+      <div class="onm" onclick="oFold(${i})"><b>${esc(x.name)} <span class="chip" id="od-${i}" style="display:${x.done ? 'inline-flex' : 'none'}">✔ 완료</span></b><span class="osub"><span>${esc(x.unit)}</span> <span id="os-${i}"></span></span></div>
+      ${x.link ? `<a class="lk" href="${esc(x.link)}" target="_blank" rel="noopener">사이트 ↗</a>` : ''}
+      <button class="ib bad sm" title="삭제" aria-label="삭제" onclick="oDel(${i})">✕</button>
+      <button class="ib sm chevb" aria-label="접기/펼치기" onclick="oFold(${i})"><span class="chev">▾</span></button></div>
+    <div class="fb" style="margin-top:8px">
+      <div class="ff" style="grid-template-columns:1fr .8fr 1.2fr">
+        <div class="fld"><label>가격(원)</label><input type="number" min="0" inputmode="numeric" value="${x.price}" oninput="oSet(${i},'price',this.value)"></div>
+        <div class="fld"><label>수량</label><input type="number" min="0" inputmode="numeric" value="${x.qty}" oninput="oSet(${i},'qty',this.value)"></div>
+        <div class="fld"><label>소계 (배송비 포함)</label><div class="nm sumv" id="ol-${i}">-</div></div></div>
+      <div class="ff" style="grid-template-columns:1.4fr 1fr;margin-top:8px;align-items:center">
+        <div class="row" style="gap:8px;flex-wrap:nowrap"><label class="row" style="gap:6px;white-space:nowrap;flex:none"><input type="checkbox" class="pick sm" ${x.ship ? 'checked' : ''} onchange="oSet(${i},'ship',this.checked)"> 배송비</label>
+          <input type="number" min="0" inputmode="numeric" id="of-${i}" value="${x.fee || ''}" placeholder="금액(원)" style="display:${x.ship ? 'block' : 'none'};width:100px;flex:none" oninput="oSet(${i},'fee',this.value)"></div>
+        <label class="row" style="gap:6px;justify-content:flex-end;white-space:nowrap"><input type="checkbox" class="pick sm" ${x.done ? 'checked' : ''} onchange="oSet(${i},'done',this.checked)"> 주문 완료</label></div></div></div>`;
 }
+function oFold(i) { const x = order.items[i]; if (!x) return; const k = 'oi_' + x.id; menuFold[k] = !menuFold[k]; saveFold(); const c = $('#o-' + i); if (c) c.classList.toggle('closed', !!menuFold[k]); }
+const O_KEYS = ['o_sum', 'o_pre', 'o_pay', 'o_method', 'o_paid', 'o_share'];
+function foldAllO(closed) { O_KEYS.forEach(k => menuFold[k] = closed); (order.items || []).forEach(x => menuFold['oi_' + x.id] = closed); saveFold(); drawOrder(); }
 function drawOrder() {
   if (page !== 'order' || !$('#main')) return;
   const P = order.pay;
   $('#main').innerHTML = `
   <div class="pagehead"><h2 style="margin:6px 0">주문</h2><div class="row"><span class="muted" id="o-save"></span><button class="btn bad sm" onclick="clearOrder()">주문 목록 비우기</button></div></div>
+  <div class="foldbar" style="margin:0 0 4px"><button class="btn sec sm" onclick="foldAllO(false)">모두 펼치기</button><button class="btn sec sm" onclick="foldAllO(true)">모두 접기</button></div>
   ${order.items.length ? order.items.map(orderCard).join('') : '<div class="card muted">주문 목록이 비어 있습니다. "결과 보기"에서 "주문하기"를 눌러 품목을 담아 주세요.</div>'}
-  <div class="card" id="o-sum"></div>
-  <div class="card"><h2>비용 계산</h2>
+  ${foldCard('o_sum', '합산 금액', '<div id="o-sum-b"></div>')}
+  ${foldCard('o_pre', '주문 내역 공유 (주문 전)', `
+    <div class="muted">주문하기 전에 품목·수량·금액을 확인용으로 공유합니다. 합계에 포함된 품목만 나옵니다.</div>
+    <div class="row" style="margin-top:8px"><button class="btn" onclick="copyPre()">주문 내역 복사</button>
+      <label class="row" style="gap:4px"><input type="checkbox" id="preImg" ${preImgOn ? 'checked' : ''} onchange="togglePreImg()"> 이미지로 공유</label></div>
+    <div id="preBox" style="display:none;margin-top:8px"><canvas id="prc" style="max-width:100%;border:1px solid var(--line);border-radius:10px"></canvas>
+      <div class="row" style="margin-top:8px"><button class="btn" onclick="cvSave('prc','주문내역')">이미지 저장</button>${navigator.canShare ? '<button class="btn sec" onclick="cvShare(\'prc\',\'주문내역\')">이미지 공유</button>' : ''}</div></div>`)}
+  ${foldCard('o_pay', '비용 계산', `
     <div class="muted">정산에 포함할 사람을 눌러 선택하세요. 투표하지 않은 명단도 선택하면 1/n 인원에 포함됩니다.</div>
     <div class="row" style="margin:8px 0" id="pay-chips"></div>
     <div class="row" style="margin-bottom:8px"><button class="btn sec sm" onclick="payAll(true)">전체 선택</button><button class="btn sec sm" onclick="payAll(false)">전체 해제</button></div>
     <div class="row"><label class="row" style="gap:4px"><input type="checkbox" ${P.subsidyOn ? 'checked' : ''} onchange="paySet('subsidyOn',this.checked)"> 지원금 있음</label>
       <input type="number" min="0" id="sub-amt" value="${P.subsidy || ''}" placeholder="지원금 입력(원)" style="width:160px;display:${P.subsidyOn ? 'block' : 'none'}" oninput="paySet('subsidy',this.value)"></div>
-    <div id="pay-res" style="margin-top:10px"></div>
-    <div style="margin-top:12px"><label class="f">정산 방법</label>
-      <div class="seg"><button class="${P.method === 'account' ? 'on' : ''}" onclick="payMethod('account')">계좌</button><button class="${P.method === 'kakao' ? 'on' : ''}" onclick="payMethod('kakao')">카카오페이</button></div>
-      ${P.method === 'account' ? `<div class="ff" style="margin-top:8px;grid-template-columns:1fr 1.6fr 1fr">
-        <div class="fld"><label>은행</label><input type="text" value="${esc(P.bank || '')}" placeholder="국민" oninput="paySet('bank',this.value)"></div>
-        <div class="fld"><label>계좌번호</label><input type="text" inputmode="numeric" value="${esc(P.acct || '')}" placeholder="123-456-7890" oninput="paySet('acct',this.value)"></div>
-        <div class="fld"><label>이름</label><input type="text" value="${esc(P.holder || '')}" placeholder="홍길동" oninput="paySet('holder',this.value)"></div></div>`
-      : P.method === 'kakao' ? `<div class="ff" style="margin-top:8px;grid-template-columns:1fr"><div class="fld"><label>이름</label><input type="text" value="${esc(P.kname || '')}" placeholder="홍길동" oninput="paySet('kname',this.value)"></div></div>` : ''}
-      <div class="muted" id="pay-msg" style="margin-top:6px"></div></div>
-    <div id="pay-list" style="margin-top:12px"></div>
-    <div class="row" style="margin-top:8px"><button class="btn" onclick="copyPay()">정산 안내 복사</button>
+    <div id="pay-res" style="margin-top:10px"></div>`)}
+  ${foldCard('o_method', '정산 방법', `
+    <div class="seg"><button class="${P.method === 'account' ? 'on' : ''}" onclick="payMethod('account')">계좌</button><button class="${P.method === 'kakao' ? 'on' : ''}" onclick="payMethod('kakao')">카카오페이</button></div>
+    ${P.method === 'account' ? `<div class="ff" style="margin-top:8px;grid-template-columns:1fr 1.6fr 1fr">
+      <div class="fld"><label>은행</label><input type="text" value="${esc(P.bank || '')}" placeholder="국민" oninput="paySet('bank',this.value)"></div>
+      <div class="fld"><label>계좌번호</label><input type="text" inputmode="numeric" value="${esc(P.acct || '')}" placeholder="123-456-7890" oninput="paySet('acct',this.value)"></div>
+      <div class="fld"><label>이름</label><input type="text" value="${esc(P.holder || '')}" placeholder="홍길동" oninput="paySet('holder',this.value)"></div></div>`
+    : P.method === 'kakao' ? `<div class="ff" style="margin-top:8px;grid-template-columns:1fr"><div class="fld"><label>이름</label><input type="text" value="${esc(P.kname || '')}" placeholder="홍길동" oninput="paySet('kname',this.value)"></div></div>` : ''}
+    <div class="paymsg" id="pay-msg"></div>`, 'em')}
+  ${foldCard('o_paid', '입금 확인 <span class="chip" id="paid-cnt"></span>', '<div id="pay-list"></div>')}
+  ${foldCard('o_share', '정산 안내 공유', `
+    <div class="row"><button class="btn" onclick="copyPay()">정산 안내 복사</button>
       <label class="row" style="gap:4px"><input type="checkbox" id="payImg" ${payImgOn ? 'checked' : ''} onchange="togglePayImg()"> 이미지로 공유</label></div>
     <div id="payBox" style="display:none;margin-top:8px"><canvas id="pc" style="max-width:100%;border:1px solid var(--line);border-radius:10px"></canvas>
-      <div class="row" style="margin-top:8px"><button class="btn" onclick="savePayImg()">이미지 저장</button>${navigator.canShare ? '<button class="btn sec" onclick="sharePayImg()">이미지 공유</button>' : ''}</div></div></div>`;
-  refreshOrderUI(); if (payImgOn) togglePayImg(true);
+      <div class="row" style="margin-top:8px"><button class="btn" onclick="savePayImg()">이미지 저장</button>${navigator.canShare ? '<button class="btn sec" onclick="sharePayImg()">이미지 공유</button>' : ''}</div></div>`)}`;
+  refreshOrderUI(); if (payImgOn) togglePayImg(true); if (preImgOn) togglePreImg(true);
 }
 function refreshOrderUI() {
-  if (!order || !$('#o-sum')) return;
-  order.items.forEach((x, i) => { const e = $('#ol-' + i); if (e) e.textContent = won((Number(x.price) || 0) * (Number(x.qty) || 0) + (x.ship ? Number(x.fee) || 0 : 0)); });
+  if (!order || !$('#o-sum-b')) return;
+  order.items.forEach((x, i) => { const sub = (Number(x.price) || 0) * (Number(x.qty) || 0) + (x.ship ? Number(x.fee) || 0 : 0), e = $('#ol-' + i), o = $('#os-' + i); if (e) e.textContent = won(sub); if (o) o.textContent = `· ${won(Number(x.price) || 0)} × ${Number(x.qty) || 0} = ${won(sub)}`; });
   const p = payInfo();
-  $('#o-sum').innerHTML = `<h2>합산 금액</h2>
+  $('#o-sum-b').innerHTML = `
     <div class="row" style="justify-content:space-between"><span>상품 합계</span><b>${won(p.goods)}</b></div>
     <div class="row" style="justify-content:space-between"><span>배송비 합계</span><b>${won(p.ship)}</b></div>
     <div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:6px;margin-top:6px"><span>총 금액</span><span class="bigsum">${won(p.total)}</span></div>
@@ -982,9 +1036,11 @@ function refreshOrderUI() {
   const pl = $('#pay-list');
   if (pl) {
     const ppl = orderVoters.map((v, i) => [v, i]).filter(x => payOn(x[0])), paid = ppl.filter(x => (order.pay.paid || []).includes(x[0].key)).length;
-    pl.innerHTML = ppl.length ? `<label class="f">입금 확인 <span class="chip">${paid}/${ppl.length}명 완료</span></label>` + ppl.map(([v, i]) => `<label class="prow ${(order.pay.paid || []).includes(v.key) ? 'ok' : ''}"><input type="checkbox" class="pick" ${(order.pay.paid || []).includes(v.key) ? 'checked' : ''} onchange="payPaid(${i})"><span class="pn2">${esc(v.name)}</span><b>${p.n ? won(p.per) : '-'}</b></label>`).join('') : '';
+    const pc = $('#paid-cnt'); if (pc) pc.textContent = `${paid}/${ppl.length}명`;
+    pl.innerHTML = ppl.length ? ppl.map(([v, i]) => `<label class="prow ${(order.pay.paid || []).includes(v.key) ? 'ok' : ''}"><input type="checkbox" class="pick" ${(order.pay.paid || []).includes(v.key) ? 'checked' : ''} onchange="payPaid(${i})"><span class="pn2">${esc(v.name)}</span><b>${p.n ? won(p.per) : '-'}</b></label>`).join('') : '';
   }
   if (payImgOn && $('#pc')) drawPayCanvas();
+  if (preImgOn && $('#prc')) drawPreCanvas();
 }
 function oSet(i, k, v) {
   const x = order.items[i]; if (!x) return;
@@ -1008,7 +1064,44 @@ function payAll(on) { const P = order.pay; P.excl = on ? [] : orderVoters.filter
 function scheduleSave() { const e = $('#o-save'); if (e) e.textContent = '저장 중…'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { saveTimer = null; try { await saveOrder(); const e2 = $('#o-save'); if (e2) e2.textContent = '저장됨'; } catch (er) { const e2 = $('#o-save'); if (e2) e2.textContent = '저장 실패'; toast(er.message); } }, 700); }
 async function saveOrder() { await call('orderSave', { order }); }
 async function clearOrder() { if (!confirm('주문 목록과 정산 설정을 모두 비울까요?')) return; try { await call('orderClear'); await renderOrder(); } catch (e) { toast(e.message); } }
-let payImgOn = false;
+let payImgOn = false, preImgOn = false;
+function togglePreImg(keep) { const on = keep === true ? true : $('#preImg').checked; preImgOn = on; const b = $('#preBox'); if (b) b.style.display = on ? 'block' : 'none'; if (on) drawPreCanvas(); }
+function preLines() {
+  const its = order.items.filter(x => x.inc), sub = x => (Number(x.price) || 0) * (Number(x.qty) || 0), L = [];
+  its.forEach(x => { L.push({ a: `${menuNo(x.id)}. ${x.name}${x.unit ? ' (' + x.unit + ')' : ''} × ${Number(x.qty) || 0}`, b: won(sub(x)) }); if (x.ship && Number(x.fee)) L.push({ a: `   배송비 · ${x.name}`, b: won(Number(x.fee)) }); });
+  return { L, total: orderTotals().total, n: its.length };
+}
+function drawPreCanvas() {
+  const c = $('#prc'); if (!c || !order) return;
+  const W = 720, P = 30, F = '"Apple SD Gothic Neo","Malgun Gothic",sans-serif', ctx = c.getContext('2d'), pre = preLines(), rows = [];
+  rows.push({ k: 'h1', a: cfg.title + ' 주문 내역' }, { k: 'sub', a: fmtT(Date.now()) + ' · ' + pre.n + '개 품목' });
+  if (!pre.L.length) rows.push({ k: 'sub', a: '담긴 품목이 없습니다' });
+  pre.L.forEach(x => rows.push({ k: 'row', a: x.a, b: x.b }));
+  rows.push({ k: 'big', a: '총 금액', b: won(pre.total) });
+  const H = { h1: 60, sub: 34, row: 36, big: 64 };
+  c.width = W; c.height = P * 2 + rows.reduce((t, x) => t + H[x.k], 0);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  let y = P;
+  rows.forEach(x => {
+    const h = H[x.k], base = y + h - 10; ctx.textAlign = 'left';
+    if (x.k === 'h1') { ctx.fillStyle = '#1d2433'; ctx.font = 'bold 32px ' + F; ctx.fillText(x.a, P, base); }
+    else if (x.k === 'sub') { ctx.fillStyle = '#6b7488'; ctx.font = '18px ' + F; ctx.fillText(x.a, P, base); }
+    else {
+      const big = x.k === 'big'; ctx.fillStyle = big ? '#3b6cf6' : '#1d2433'; ctx.font = (big ? 'bold 30px ' : '20px ') + F;
+      const bw = ctx.measureText(x.b).width; let a = x.a; while (ctx.measureText(a).width > W - P * 2 - bw - 20 && a.length > 1) a = a.slice(0, -1); if (a !== x.a) a += '…';
+      ctx.fillText(a, P, base); ctx.textAlign = 'right'; ctx.fillText(x.b, W - P, base);
+      ctx.strokeStyle = '#e3e7ef'; ctx.beginPath(); ctx.moveTo(P, y + h - 2); ctx.lineTo(W - P, y + h - 2); ctx.stroke();
+    }
+    y += h;
+  });
+}
+const cvBlob = id => new Promise(res => $('#' + id).toBlob(res, 'image/png'));
+async function cvSave(id, nm) { const b = await cvBlob(id), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `${cfg.title}_${nm}_${new Date().toISOString().slice(0, 10)}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); }
+async function cvShare(id, nm) { const b = await cvBlob(id), f = new File([b], nm + '.png', { type: 'image/png' }); if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: cfg.title }); } catch {} } else cvSave(id, nm); }
+async function copyPre() {
+  const pre = preLines(), L = [`[${cfg.title}] 주문 내역 (${fmtT(Date.now())})`, ...pre.L.map(x => `${x.a.trim()}  ${x.b}`), `총 금액 ${won(pre.total)}`];
+  try { await navigator.clipboard.writeText(L.join('\n')); toast('복사했습니다'); } catch { toast('복사 실패'); }
+}
 function togglePayImg(keep) { const on = keep === true ? true : $('#payImg').checked; payImgOn = on; const b = $('#payBox'); if (b) b.style.display = on ? 'block' : 'none'; if (on) drawPayCanvas(); }
 function drawPayCanvas() {
   const c = $('#pc'); if (!c || !order) return;
