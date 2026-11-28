@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#3b6cf6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Snack Poll v1.36</title>
+<title>Snack Poll v1.37</title>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--ink:#1d2433;--sub:#6b7488;--line:#e3e7ef;--acc:#3b6cf6;--acc2:#e8eeff;--ok:#1f9d63;--bad:#d64545;--warn:#b7791f}
 *{box-sizing:border-box}
@@ -98,7 +98,7 @@ textarea{min-height:90px}
 input.pick{width:26px;height:26px}
 input.pick[type=checkbox]{-webkit-appearance:none;appearance:none;border:2px solid #aab2c3;border-radius:50%;background:#fff;position:relative}
 input.pick[type=checkbox]:checked{background:var(--acc);border-color:var(--acc)}
-input.pick[type=checkbox]:checked::after{content:"";position:absolute;left:7px;top:2px;width:7px;height:12px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg)}
+input.pick[type=checkbox]:checked::after{content:"";position:absolute;left:30%;top:8%;width:28%;height:52%;box-sizing:border-box;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
 .payer{min-height:40px}
 .urow{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}
 .urow .un{font-weight:700;font-size:16px}
@@ -222,6 +222,29 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 .card.em .fh h2{color:var(--acc);font-size:18px}
 .paymsg{margin-top:10px;font-weight:700;font-size:15px;line-height:1.5}
 .paymsg:empty{display:none}
+
+.oi.card{padding:8px 10px;margin-bottom:8px}
+.oi .oh{gap:6px}
+.oi .onm b{font-size:14px;line-height:1.25}
+.oi .osub{font-size:12px;line-height:1.2}
+.oi:not(.closed) .osum{display:none}
+.oi .fb{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}
+.num{position:relative;flex:none}
+.num input{height:32px!important;min-height:32px!important;padding:2px 22px 2px 8px!important;font-size:16px;text-align:right;border:1px solid var(--line);border-radius:8px;background:#fbfcfe;box-sizing:border-box}
+.num i{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-style:normal;font-size:12px;color:var(--sub);pointer-events:none}
+.num.pr input{width:104px}
+.num.qt input{width:64px}
+.num.fee input{width:104px}
+.oline{display:flex;align-items:center;gap:6px}
+.oline .mid{color:var(--sub);font-size:13px}
+.oline .sumv{margin-left:auto;min-height:0;display:block;font-size:15px;white-space:nowrap}
+.oline2{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13px}
+.oline2 .chk{display:flex;align-items:center;gap:5px;white-space:nowrap;flex:none;cursor:pointer}
+.oi .ib{width:26px;height:26px;min-height:26px;border-radius:8px;font-size:12px}
+.oi .pick{width:22px;height:22px}
+.oi .pick.sm{width:18px;height:18px}
+.oi .no{min-width:22px;height:22px;line-height:22px;font-size:12px}
+.oi .lk{font-size:12px;padding:2px}
 </style>
 </head>
 <body>
@@ -230,7 +253,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box
 <div id="modalRoot"></div>
 
 <script>
-const VERSION = 'v1.36';
+const VERSION = 'v1.37';
 const _AE = 'jVGel9ydldzVBRkStdGbBVzakh2dVRmQlpXd4FlelVWOVhkYtd1dzoUMIZza5Qnd4UlVqp1M1dWLQh1cZRXVnpkQ3cUN4J2Y5Z2SB9ycvM3byNWYt9SbvNmLlx2Zv92ZuQHcpJ3Yz9yL6MHc0RHa';
 const _dec = e => { try { return decodeURIComponent(escape(atob(e.split('').reverse().join('')))); } catch (x) { return ''; } };
 const _enc = u => btoa(unescape(encodeURIComponent(u))).split('').reverse().join('');
@@ -952,25 +975,34 @@ function payInfo() {
   const sub = P.subsidyOn ? (Number(P.subsidy) || 0) : 0, settle = Math.max(0, t.total - sub), per = n ? Math.ceil(settle / n) : 0;
   return { ...t, n, sub, settle, per, diff: per * n - settle };
 }
+const fmtN = n => (Number(n) > 0 ? Number(n).toLocaleString('ko-KR') : '');
+function moneyFmt(el) {
+  const pos = el.selectionStart == null ? el.value.length : el.selectionStart, digitsBefore = el.value.slice(0, pos).replace(/\D/g, '').length;
+  const raw = el.value.replace(/\D/g, '').slice(0, 10); el.value = raw ? Number(raw).toLocaleString('ko-KR') : '';
+  let c = 0, p = 0; if (digitsBefore) { for (; p < el.value.length; p++) { if (/\d/.test(el.value[p])) c++; if (c === digitsBefore) { p++; break; } } } try { el.setSelectionRange(p, p); } catch (e) {}
+  return Number(raw) || 0;
+}
+function oMoney(i, k, el) { oSet(i, k, moneyFmt(el)); }
 function orderCard(x, i) {
   const closed = !!menuFold['oi_' + x.id];
   return `<div class="card fold oi ord ${x.done ? 'done' : ''} ${closed ? 'closed' : ''}" id="o-${i}">
     <div class="oh">
       <input type="checkbox" class="pick" title="합계에 포함" ${x.inc ? 'checked' : ''} onchange="oSet(${i},'inc',this.checked)">
       <span class="no">${menuNo(x.id)}</span>
-      <div class="onm" onclick="oFold(${i})"><b>${esc(x.name)} <span class="chip" id="od-${i}" style="display:${x.done ? 'inline-flex' : 'none'}">✔ 완료</span></b><span class="osub"><span>${esc(x.unit)}</span> <span id="os-${i}"></span></span></div>
+      <div class="onm" onclick="oFold(${i})"><b>${esc(x.name)} <span class="chip" id="od-${i}" style="display:${x.done ? 'inline-flex' : 'none'}">✔ 완료</span></b><span class="osub">${x.unit ? esc(x.unit) + ' ' : ''}<span class="osum" id="os-${i}"></span></span></div>
       ${x.link ? `<a class="lk" href="${esc(x.link)}" target="_blank" rel="noopener">사이트 ↗</a>` : ''}
       <button class="ib bad sm" title="삭제" aria-label="삭제" onclick="oDel(${i})">✕</button>
       <button class="ib sm chevb" aria-label="접기/펼치기" onclick="oFold(${i})"><span class="chev">▾</span></button></div>
-    <div class="fb" style="margin-top:8px">
-      <div class="ff" style="grid-template-columns:1fr .8fr 1.2fr">
-        <div class="fld"><label>가격(원)</label><input type="number" min="0" inputmode="numeric" value="${x.price}" oninput="oSet(${i},'price',this.value)"></div>
-        <div class="fld"><label>수량</label><input type="number" min="0" inputmode="numeric" value="${x.qty}" oninput="oSet(${i},'qty',this.value)"></div>
-        <div class="fld"><label>소계 (배송비 포함)</label><div class="nm sumv" id="ol-${i}">-</div></div></div>
-      <div class="ff" style="grid-template-columns:1.4fr 1fr;margin-top:8px;align-items:center">
-        <div class="row" style="gap:8px;flex-wrap:nowrap"><label class="row" style="gap:6px;white-space:nowrap;flex:none"><input type="checkbox" class="pick sm" ${x.ship ? 'checked' : ''} onchange="oSet(${i},'ship',this.checked)"> 배송비</label>
-          <input type="number" min="0" inputmode="numeric" id="of-${i}" value="${x.fee || ''}" placeholder="금액(원)" style="display:${x.ship ? 'block' : 'none'};width:100px;flex:none" oninput="oSet(${i},'fee',this.value)"></div>
-        <label class="row" style="gap:6px;justify-content:flex-end;white-space:nowrap"><input type="checkbox" class="pick sm" ${x.done ? 'checked' : ''} onchange="oSet(${i},'done',this.checked)"> 주문 완료</label></div></div></div>`;
+    <div class="fb">
+      <div class="oline">
+        <div class="num pr"><input type="text" inputmode="numeric" aria-label="가격" value="${fmtN(x.price)}" placeholder="0" oninput="oMoney(${i},'price',this)"><i>원</i></div>
+        <span class="mid">×</span>
+        <div class="num qt"><input type="number" min="0" inputmode="numeric" aria-label="수량" value="${x.qty}" oninput="oSet(${i},'qty',this.value)"><i>개</i></div>
+        <span class="mid">=</span><b class="sumv" id="ol-${i}">-</b></div>
+      <div class="oline2">
+        <label class="chk"><input type="checkbox" class="pick sm" ${x.ship ? 'checked' : ''} onchange="oSet(${i},'ship',this.checked)"> 배송비</label>
+        <div class="num fee" id="ofw-${i}" style="display:${x.ship ? 'block' : 'none'}"><input type="text" inputmode="numeric" aria-label="배송비" value="${fmtN(x.fee)}" placeholder="0" oninput="oMoney(${i},'fee',this)"><i>원</i></div>
+        <label class="chk" style="margin-left:auto"><input type="checkbox" class="pick sm" ${x.done ? 'checked' : ''} onchange="oSet(${i},'done',this.checked)"> 주문 완료</label></div></div></div>`;
 }
 function oFold(i) { const x = order.items[i]; if (!x) return; const k = 'oi_' + x.id; menuFold[k] = !menuFold[k]; saveFold(); const c = $('#o-' + i); if (c) c.classList.toggle('closed', !!menuFold[k]); }
 const O_KEYS = ['o_sum', 'o_pre', 'o_pay', 'o_method', 'o_paid', 'o_share'];
@@ -994,7 +1026,7 @@ function drawOrder() {
     <div class="row" style="margin:8px 0" id="pay-chips"></div>
     <div class="row" style="margin-bottom:8px"><button class="btn sec sm" onclick="payAll(true)">전체 선택</button><button class="btn sec sm" onclick="payAll(false)">전체 해제</button></div>
     <div class="row"><label class="row" style="gap:4px"><input type="checkbox" ${P.subsidyOn ? 'checked' : ''} onchange="paySet('subsidyOn',this.checked)"> 지원금 있음</label>
-      <input type="number" min="0" id="sub-amt" value="${P.subsidy || ''}" placeholder="지원금 입력(원)" style="width:160px;display:${P.subsidyOn ? 'block' : 'none'}" oninput="paySet('subsidy',this.value)"></div>
+      <div class="num" id="sub-w" style="display:${P.subsidyOn ? 'block' : 'none'}"><input type="text" inputmode="numeric" id="sub-amt" aria-label="지원금" value="${fmtN(P.subsidy)}" placeholder="지원금" style="width:140px" oninput="paySet('subsidy',moneyFmt(this))"><i>원</i></div></div>
     <div id="pay-res" style="margin-top:10px"></div>`)}
   ${foldCard('o_method', '정산 방법', `
     <div class="seg"><button class="${P.method === 'account' ? 'on' : ''}" onclick="payMethod('account')">계좌</button><button class="${P.method === 'kakao' ? 'on' : ''}" onclick="payMethod('kakao')">카카오페이</button></div>
@@ -1045,14 +1077,14 @@ function refreshOrderUI() {
 function oSet(i, k, v) {
   const x = order.items[i]; if (!x) return;
   if (k === 'price' || k === 'qty' || k === 'fee') x[k] = Math.max(0, Number(v) || 0); else x[k] = v;
-  if (k === 'ship') { const e = $('#of-' + i); if (e) e.style.display = v ? 'block' : 'none'; }
+  if (k === 'ship') { const e = $('#ofw-' + i); if (e) e.style.display = v ? 'block' : 'none'; }
   if (k === 'done') { const c = $('#o-' + i), b = $('#od-' + i); if (c) c.classList.toggle('done', v); if (b) b.style.display = v ? 'inline-flex' : 'none'; }
   refreshOrderUI(); scheduleSave();
 }
 function oDel(i) { if (!confirm('이 품목을 주문 목록에서 뺄까요?')) return; order.items.splice(i, 1); scheduleSave(); drawOrder(); }
 function paySet(k, v) {
   if (k === 'subsidy') order.pay.subsidy = Math.max(0, Number(v) || 0); else order.pay[k] = v;
-  if (k === 'subsidyOn') { const e = $('#sub-amt'); if (e) e.style.display = v ? 'block' : 'none'; }
+  if (k === 'subsidyOn') { const e = $('#sub-w'); if (e) e.style.display = v ? 'block' : 'none'; }
   refreshOrderUI(); scheduleSave();
 }
 function payToggle(n) {
